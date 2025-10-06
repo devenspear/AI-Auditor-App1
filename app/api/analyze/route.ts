@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 
 interface PageSpeedData {
   lighthouseResult?: {
@@ -33,8 +33,8 @@ async function fetchPageSpeedData(url: string, apiKey: string): Promise<PageSpee
   return response.json();
 }
 
-async function analyzeWithAnthropic(url: string, pageSpeedData: PageSpeedData, anthropic: Anthropic) {
-  console.log('analyzeWithAnthropic: Starting analysis for URL:', url);
+async function analyzeWithOpenAI(url: string, pageSpeedData: PageSpeedData, openai: OpenAI) {
+  console.log('analyzeWithOpenAI: Starting analysis for URL:', url);
 
   const prompt = `You are an expert web marketing and UX auditor. Analyze the following website and PageSpeed data, then provide actionable recommendations.
 
@@ -71,33 +71,40 @@ Format your response as a structured JSON with the following schema:
   ]
 }`;
 
-  console.log('analyzeWithAnthropic: Calling Anthropic API...');
-  console.log('analyzeWithAnthropic: Model: claude-3-5-sonnet-20241022');
-  console.log('analyzeWithAnthropic: Prompt length:', prompt.length);
+  console.log('analyzeWithOpenAI: Calling OpenAI API...');
+  console.log('analyzeWithOpenAI: Model: gpt-4-turbo-preview');
+  console.log('analyzeWithOpenAI: Prompt length:', prompt.length);
 
-  const message = await anthropic.messages.create({
-    model: "claude-3-5-sonnet-20241022",
-    max_tokens: 4096,
+  const completion = await openai.chat.completions.create({
+    model: "gpt-4-turbo-preview",
     messages: [
+      {
+        role: "system",
+        content: "You are an expert web marketing and UX auditor. Always respond with valid JSON only, no additional text.",
+      },
       {
         role: "user",
         content: prompt,
       },
     ],
+    temperature: 0.7,
+    max_tokens: 4096,
+    response_format: { type: "json_object" },
   });
 
-  console.log('analyzeWithAnthropic: API call successful, processing response...');
-  const content = message.content[0];
-  if (content.type === "text") {
-    // Extract JSON from the response
-    const jsonMatch = content.text.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      return JSON.parse(jsonMatch[0]);
+  console.log('analyzeWithOpenAI: API call successful, processing response...');
+  const content = completion.choices[0].message.content;
+
+  if (content) {
+    try {
+      return JSON.parse(content);
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError);
+      return { rawResponse: content };
     }
-    return { rawResponse: content.text };
   }
 
-  throw new Error("Unexpected response format from Claude");
+  throw new Error("No content in OpenAI response");
 }
 
 export async function POST(request: Request) {
@@ -113,10 +120,10 @@ export async function POST(request: Request) {
     }
 
     // Check for required API keys
-    const anthropicKey = process.env.ANTHROPIC_API_KEY;
+    const openaiKey = process.env.OPENAI_API_KEY;
     const pageSpeedKey = process.env.PAGESPEED_API_KEY;
 
-    if (!anthropicKey || !pageSpeedKey) {
+    if (!openaiKey || !pageSpeedKey) {
       return NextResponse.json(
         {
           message: "Server configuration error. API keys not configured.",
@@ -125,12 +132,12 @@ export async function POST(request: Request) {
       );
     }
 
-    // Initialize Anthropic client
-    console.log('Initializing Anthropic client...');
-    const anthropic = new Anthropic({
-      apiKey: anthropicKey,
+    // Initialize OpenAI client
+    console.log('Initializing OpenAI client...');
+    const openai = new OpenAI({
+      apiKey: openaiKey,
     });
-    console.log('Anthropic client initialized successfully');
+    console.log('OpenAI client initialized successfully');
 
     // Fetch PageSpeed data (optional - continue even if it fails)
     console.log('Fetching PageSpeed data...');
@@ -150,18 +157,18 @@ export async function POST(request: Request) {
       // Continue analysis without PageSpeed data
     }
 
-    // Analyze with Claude
-    console.log('Starting Claude analysis...');
+    // Analyze with OpenAI
+    console.log('Starting OpenAI analysis...');
     let analysis;
     try {
-      analysis = await analyzeWithAnthropic(url, pageSpeedData, anthropic);
-      console.log('Claude analysis completed successfully');
-    } catch (anthropicError) {
-      console.error('Anthropic API error details:', anthropicError);
-      console.error('Error type:', anthropicError instanceof Error ? anthropicError.constructor.name : typeof anthropicError);
-      console.error('Error message:', anthropicError instanceof Error ? anthropicError.message : String(anthropicError));
-      console.error('Error stack:', anthropicError instanceof Error ? anthropicError.stack : 'No stack trace');
-      throw anthropicError;
+      analysis = await analyzeWithOpenAI(url, pageSpeedData, openai);
+      console.log('OpenAI analysis completed successfully');
+    } catch (openaiError) {
+      console.error('OpenAI API error details:', openaiError);
+      console.error('Error type:', openaiError instanceof Error ? openaiError.constructor.name : typeof openaiError);
+      console.error('Error message:', openaiError instanceof Error ? openaiError.message : String(openaiError));
+      console.error('Error stack:', openaiError instanceof Error ? openaiError.stack : 'No stack trace');
+      throw openaiError;
     }
 
     return NextResponse.json({
