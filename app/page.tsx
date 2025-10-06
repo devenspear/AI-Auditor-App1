@@ -137,12 +137,11 @@ export default function Home() {
       setStatus("success");
     } catch (err) {
       console.error(err);
-      setReport(demoReport);
-      setStatus("success");
+      setStatus("error");
       setError(
         err instanceof Error
           ? err.message
-          : "We could not complete the analysis. Showing demo data while we investigate.",
+          : "We could not complete the analysis. Please try again.",
       );
     }
   }
@@ -180,6 +179,13 @@ export default function Home() {
           </p>
 
           {status === "loading" && <LoadingState />}
+
+          {status === "error" && error && (
+            <div className="mt-16 rounded-xl border border-red-300 bg-red-100/60 p-6 text-sm text-red-900">
+              <p className="font-semibold">Analysis Failed</p>
+              <p className="mt-2">{error}</p>
+            </div>
+          )}
 
           {showReport && report && (
             <div className="mt-16 space-y-8">

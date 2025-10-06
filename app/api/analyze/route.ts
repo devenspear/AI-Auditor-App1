@@ -142,9 +142,26 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("Analysis request failed:", error);
+
+    // Extract more detailed error information
+    let errorMessage = "Analysis failed. Please try again.";
+    let errorDetails = "";
+
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      // Check if it's an Anthropic API error with more details
+      if ('error' in error && typeof error.error === 'object' && error.error !== null) {
+        const apiError = error.error as { message?: string };
+        if (apiError.message) {
+          errorDetails = apiError.message;
+        }
+      }
+    }
+
     return NextResponse.json(
       {
-        message: error instanceof Error ? error.message : "Analysis failed. Please try again.",
+        message: errorMessage,
+        details: errorDetails || undefined,
       },
       { status: 500 },
     );
