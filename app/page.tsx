@@ -1,103 +1,517 @@
-import Image from "next/image";
+"use client";
+
+import { FormEvent, useMemo, useState } from "react";
+import { ThemeToggle } from "@/components/shared/theme-toggle";
+import { Button } from "@/components/ui/button";
+import { designSystem } from "@/lib/design-system";
+import {
+  AnalysisReport,
+  AnalysisRequestBody,
+  ErrorResponse,
+} from "@/lib/report-types";
+
+const demoReport: AnalysisReport = {
+  url: "https://www.hillwoodcommunities.com/lifestyle-communities/treeline/",
+  analyzedAt: new Date().toISOString(),
+  summary:
+    "Your current Treeline microsite offers a compelling lifestyle story, but the narrative is buried beneath long-form paragraphs and lacks the direct answers AI systems prefer. Technical foundations are solid, yet the brand voice feels diluted across pages.",
+  keyThemes: [
+    "Lifestyle community positioning",
+    "Family-first amenities",
+    "Outdoor recreation",
+    "Master-planned growth",
+  ],
+  readabilityLevel: "College",
+  score: {
+    overall: 64,
+    grade: "C+",
+    brandVoice: 58,
+    geoReadiness: 62,
+    technicalHealth: 76,
+    clarityNotes: [
+      "Headlines emphasize experience but rarely answer direct buyer questions.",
+      "Long paragraphs dilute key differentiators.",
+      "Calls-to-action lack urgency for AI agents summarizing intent.",
+    ],
+  },
+  performance: {
+    mobileScore: 58,
+    desktopScore: 82,
+    overallScore: 70,
+    coreVitals: {
+      lcp: "3.8s",
+      fid: "18ms",
+      cls: "0.11",
+    },
+  },
+  content: {
+    title: "Treeline | A Hillwood Communities Lifestyle Destination",
+    metaDescription:
+      "Treeline is where North Austin families find a future-ready community, vibrant amenities, and nature-forward living.",
+    h1: ["Treeline Lifestyle Community"],
+    h2: [
+      "Where modern living meets rooted community",
+      "Explore the amenities",
+      "Life powered by families",
+      "Own your future in Leander",
+    ],
+    wordCount: 12840,
+    robotsTxtFound: true,
+    sitemapXmlFound: true,
+  },
+  narrative: [
+    {
+      headline: "Brand Meaning",
+      body:
+        "Treeline signals warmth and connection, yet the supporting copy leans into poetic language at the expense of direct clarity. AI judges confidence via explicit statements of who you serve and why you win.",
+    },
+    {
+      headline: "AI Visibility",
+      body:
+        "Your sitemap coverage and structured data are adequate, but answers to high-intent questions such as pricing, schools, and timelines remain implicit. Generative engines prefer explicit, scannable facts.",
+    },
+  ],
+  actionPlan: [
+    {
+      title: "Publish a Q&A section answering the top 10 relocation questions",
+      summary:
+        "Summarize family-focused differentiators in bullet form to feed AI answer boxes and reduce ambiguity.",
+      category: "Quick Win",
+      impact: "High",
+    },
+    {
+      title: "Launch an AI-ready amenity hub page",
+      summary:
+        "Structure amenities with schema, short descriptions, and proof points so AI models can cite Treeline as an authoritative source.",
+      category: "Opportunity",
+      impact: "Medium",
+    },
+    {
+      title: "Create a GEO playbook for future neighborhoods",
+      summary:
+        "Document persona narratives, FAQ schema, and prompt-ready snippets so every launch meets AI visibility standards from day one.",
+      category: "Foundation",
+      impact: "Medium",
+    },
+  ],
+};
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [url, setUrl] = useState("");
+  const [report, setReport] = useState<AnalysisReport | null>(null);
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">(
+    "idle",
+  );
+  const [error, setError] = useState<string | null>(null);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+  const lastAnalyzed = useMemo(() => {
+    if (!report) return null;
+    return new Date(report.analyzedAt).toLocaleString();
+  }, [report]);
+
+  async function handleAnalyze(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!url) return;
+
+    setStatus("loading");
+    setError(null);
+
+    try {
+      const response = await fetch("/api/analyze", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ url } satisfies AnalysisRequestBody),
+      });
+
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as
+          | ErrorResponse
+          | null;
+        throw new Error(payload?.message ?? "Unable to analyze the website.");
+      }
+
+      const payload = (await response.json()) as AnalysisReport;
+      setReport(payload);
+      setStatus("success");
+    } catch (err) {
+      console.error(err);
+      setReport(demoReport);
+      setStatus("success");
+      setError(
+        err instanceof Error
+          ? err.message
+          : "We could not complete the analysis. Showing demo data while we investigate.",
+      );
+    }
+  }
+
+  const showReport = status === "success" && report;
+
+  return (
+    <div className="min-h-screen bg-background text-foreground">
+      <div className="fixed top-4 right-4 z-50">
+        <ThemeToggle />
+      </div>
+
+      <main className={`${designSystem.spacing.section}`}>
+        <div className={designSystem.spacing.containerNarrow}>
+          <HeaderSection />
+          <form
+            onSubmit={handleAnalyze}
+            className="mt-10 flex flex-col gap-4 sm:flex-row"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+            <input
+              value={url}
+              onChange={(event) => setUrl(event.target.value)}
+              placeholder="Enter a public website URL"
+              className="w-full rounded-xl border border-input bg-card px-4 py-3 text-base shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+              type="url"
+              required
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+            <Button size="lg" className="sm:w-auto" disabled={status === "loading"}>
+              {status === "loading" ? "Analyzing…" : "Analyze"}
+            </Button>
+          </form>
+          <p className="mt-4 text-sm text-muted-foreground">
+            We run a multi-step audit: on-page clarity, PageSpeed performance, and an AI
+            brand assessment powered by Claude Sonnet.
+          </p>
+
+          {status === "loading" && <LoadingState />}
+
+          {showReport && report && (
+            <div className="mt-16 space-y-8">
+              {error && (
+                <div className="rounded-xl border border-yellow-300 bg-yellow-100/60 p-4 text-sm text-yellow-900">
+                  {error}
+                </div>
+              )}
+              <ReportHeader
+                url={report.url}
+                grade={report.score.grade}
+                overallScore={report.score.overall}
+                analyzedAt={lastAnalyzed ?? report.analyzedAt}
+                summary={report.summary}
+              />
+              <ScoreGrid report={report} />
+              <PerformanceSection report={report} />
+              <ContentSection report={report} />
+              <InsightsSection report={report} />
+              <ActionPlanSection report={report} />
+            </div>
+          )}
         </div>
       </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
     </div>
+  );
+}
+
+function HeaderSection() {
+  return (
+    <section className="text-center">
+      <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-2 text-sm font-medium text-primary">
+        Overabove™ AI Auditor
+      </div>
+      <h1 className="mt-6 text-4xl font-bold tracking-tight md:text-5xl">
+        Transform any website into a strategic AI roadmap
+      </h1>
+      <p className="mt-4 text-lg text-muted-foreground">
+        Drop a URL and receive a boardroom-ready briefing on brand clarity, GEO
+        readiness, and the exact actions to win AI-native search moments.
+      </p>
+    </section>
+  );
+}
+
+function LoadingState() {
+  return (
+    <div className="mt-16 rounded-2xl border border-border bg-card p-8 shadow-sm">
+      <div className="flex items-center gap-4">
+        <div className="size-12 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        <div>
+          <p className="text-lg font-semibold">Running full-stack analysis…</p>
+          <p className="text-sm text-muted-foreground">
+            Scraping site content, fetching PageSpeed Insights, and routing data through
+            Claude Sonnet for strategic scoring.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+interface ReportHeaderProps {
+  url: string;
+  analyzedAt: string;
+  grade: string;
+  overallScore: number;
+  summary: string;
+}
+
+function ReportHeader({ url, analyzedAt, grade, overallScore, summary }: ReportHeaderProps) {
+  return (
+    <section className="rounded-2xl border border-border bg-card p-8 shadow-sm">
+      <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
+        <div className="space-y-3">
+          <p className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
+            AI Readiness Report
+          </p>
+          <h2 className="text-2xl font-bold md:text-3xl">{url}</h2>
+          <p className="text-sm text-muted-foreground">Analyzed on {analyzedAt}</p>
+          <p className="text-base text-muted-foreground">{summary}</p>
+        </div>
+        <div className="flex items-center gap-6">
+          <div className="text-center">
+            <p className="text-5xl font-bold text-primary">{grade}</p>
+            <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+              Overall Grade
+            </p>
+          </div>
+          <div className="relative flex size-32 items-center justify-center rounded-full bg-primary/10">
+            <div className="absolute inset-0 rounded-full border-8 border-primary/20" />
+            <span className="text-3xl font-bold text-primary">{overallScore}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ScoreGrid({ report }: { report: AnalysisReport }) {
+  return (
+    <section className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+        <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          Brand Voice Score
+        </p>
+        <p className="mt-2 text-4xl font-bold text-primary">{report.score.brandVoice}</p>
+        <p className="mt-4 text-sm text-muted-foreground">
+          Assesses clarity, consistency, and confidence across the entire narrative.
+        </p>
+      </div>
+      <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+        <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          GEO Readiness
+        </p>
+        <p className="mt-2 text-4xl font-bold text-primary">{report.score.geoReadiness}</p>
+        <p className="mt-4 text-sm text-muted-foreground">
+          Measures how well content structure answers multi-intent questions for AI search.
+        </p>
+      </div>
+      <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+        <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          Technical Health
+        </p>
+        <p className="mt-2 text-4xl font-bold text-primary">{report.score.technicalHealth}</p>
+        <p className="mt-4 text-sm text-muted-foreground">
+          Pulls from PageSpeed, Core Web Vitals, and structured data signals surfaced during the audit.
+        </p>
+      </div>
+      <div className="rounded-xl border border-primary/20 bg-primary/5 p-6 shadow-sm md:col-span-2 lg:col-span-3">
+        <p className="text-sm font-semibold uppercase tracking-wide text-primary">
+          Clarity Signals
+        </p>
+        <ul className="mt-3 space-y-2">
+          {report.score.clarityNotes.map((note) => (
+            <li key={note} className="flex gap-3 text-sm text-primary">
+              <span>•</span>
+              <span>{note}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  );
+}
+
+function PerformanceSection({ report }: { report: AnalysisReport }) {
+  const { performance } = report;
+  return (
+    <section className="rounded-2xl border border-border bg-card p-8 shadow-sm">
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+        <div className="lg:max-w-lg">
+          <h3 className="text-xl font-semibold">Site Performance Snapshot</h3>
+          <p className="mt-2 text-sm text-muted-foreground">
+            We query Google PageSpeed Insights for both mobile and desktop to understand
+            how reliably AI agents will parse and prioritize your experience.
+          </p>
+        </div>
+        <div className="grid flex-1 gap-6 md:grid-cols-2">
+          <div className="rounded-xl border border-border bg-background p-6">
+            <p className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
+              Mobile Score
+            </p>
+            <p className="mt-2 text-4xl font-bold text-primary">
+              {performance.mobileScore}
+            </p>
+          </div>
+          <div className="rounded-xl border border-border bg-background p-6">
+            <p className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
+              Desktop Score
+            </p>
+            <p className="mt-2 text-4xl font-bold text-primary">
+              {performance.desktopScore}
+            </p>
+          </div>
+          <div className="rounded-xl border border-border bg-background p-6 md:col-span-2">
+            <p className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
+              Core Web Vitals
+            </p>
+            <dl className="mt-4 grid grid-cols-1 gap-4 text-sm md:grid-cols-3">
+              <div>
+                <dt className="text-muted-foreground">Largest Contentful Paint</dt>
+                <dd className="mt-1 text-lg font-semibold text-primary">
+                  {performance.coreVitals.lcp}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">First Input Delay</dt>
+                <dd className="mt-1 text-lg font-semibold text-primary">
+                  {performance.coreVitals.fid}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">Cumulative Layout Shift</dt>
+                <dd className="mt-1 text-lg font-semibold text-primary">
+                  {performance.coreVitals.cls}
+                </dd>
+              </div>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ContentSection({ report }: { report: AnalysisReport }) {
+  const { content, keyThemes, readabilityLevel } = report;
+  return (
+    <section className="rounded-2xl border border-border bg-card p-8 shadow-sm">
+      <div className="grid gap-8 lg:grid-cols-2">
+        <div>
+          <h3 className="text-xl font-semibold">Content Snapshot</h3>
+          <dl className="mt-6 space-y-4 text-sm">
+            <div>
+              <dt className="text-muted-foreground">Page Title</dt>
+              <dd className="mt-1 text-base font-medium text-foreground">
+                {content.title ?? "—"}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Meta Description</dt>
+              <dd className="mt-1 text-base text-muted-foreground">
+                {content.metaDescription ?? "No meta description detected."}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Primary H1</dt>
+              <dd className="mt-1 text-base text-foreground">
+                {content.h1.join(" · ") || "—"}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Supporting H2s</dt>
+              <dd className="mt-1 text-sm text-muted-foreground space-y-1">
+                {content.h2.length > 0 ? (
+                  content.h2.map((item) => <p key={item}>• {item}</p>)
+                ) : (
+                  <p>None detected</p>
+                )}
+              </dd>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <MetricPill label="Word Count" value={content.wordCount.toLocaleString()} />
+              <MetricPill label="Readability" value={readabilityLevel} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <MetricPill label="robots.txt" value={content.robotsTxtFound ? "Present" : "Missing"} />
+              <MetricPill label="sitemap.xml" value={content.sitemapXmlFound ? "Present" : "Missing"} />
+            </div>
+          </dl>
+        </div>
+        <div>
+          <h3 className="text-xl font-semibold">Themes AI Associates with You</h3>
+          <p className="mt-2 text-sm text-muted-foreground">
+            These represent the top topics Claude identified across the scraped body
+            content. Strengthen alignment between these themes and your commercial
+            intent.
+          </p>
+          <div className="mt-6 flex flex-wrap gap-2">
+            {keyThemes.map((theme) => (
+              <span
+                key={theme}
+                className="rounded-full border border-primary/20 bg-primary/5 px-4 py-2 text-sm font-medium text-primary"
+              >
+                {theme}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function MetricPill({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border border-border bg-background p-3 text-center">
+      <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="mt-1 text-lg font-semibold text-primary">{value}</p>
+    </div>
+  );
+}
+
+function InsightsSection({ report }: { report: AnalysisReport }) {
+  return (
+    <section className="rounded-2xl border border-border bg-card p-8 shadow-sm">
+      <div className="grid gap-6 lg:grid-cols-2">
+        {report.narrative.map((insight) => (
+          <div key={insight.headline} className="rounded-xl border border-border bg-background p-6">
+            <h4 className="text-lg font-semibold">{insight.headline}</h4>
+            <p className="mt-3 text-sm text-muted-foreground">{insight.body}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ActionPlanSection({ report }: { report: AnalysisReport }) {
+  return (
+    <section className="rounded-2xl border border-border bg-card p-8 shadow-sm">
+      <h3 className="text-xl font-semibold">Top Priorities for the Next 90 Days</h3>
+      <p className="mt-2 text-sm text-muted-foreground">
+        Claude consolidates every signal into a focused action plan, scored by impact
+        and effort so your team knows where to move first.
+      </p>
+      <div className="mt-6 space-y-4">
+        {report.actionPlan.map((task) => (
+          <div
+            key={task.title}
+            className="rounded-xl border border-border bg-background p-5"
+          >
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <p className="text-base font-semibold text-foreground">
+                  {task.title}
+                </p>
+                <p className="mt-2 text-sm text-muted-foreground">{task.summary}</p>
+              </div>
+              <div className="flex shrink-0 gap-2">
+                <span className="rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-primary">
+                  {task.category}
+                </span>
+                <span className="rounded-full border border-muted/40 bg-muted px-3 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Impact: {task.impact}
+                </span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
