@@ -1,0 +1,4 @@
+{
+  "buildCommand": "cd /vercel/path0 && npm run build",
+  "installCommand": "cd /vercel/path0 && npm install"
+}
