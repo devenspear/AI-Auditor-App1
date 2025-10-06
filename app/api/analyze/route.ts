@@ -34,6 +34,8 @@ async function fetchPageSpeedData(url: string, apiKey: string): Promise<PageSpee
 }
 
 async function analyzeWithAnthropic(url: string, pageSpeedData: PageSpeedData, anthropic: Anthropic) {
+  console.log('analyzeWithAnthropic: Starting analysis for URL:', url);
+
   const prompt = `You are an expert web marketing and UX auditor. Analyze the following website and PageSpeed data, then provide actionable recommendations.
 
 Website URL: ${url}
@@ -69,6 +71,10 @@ Format your response as a structured JSON with the following schema:
   ]
 }`;
 
+  console.log('analyzeWithAnthropic: Calling Anthropic API...');
+  console.log('analyzeWithAnthropic: Model: claude-3-5-sonnet-20241022');
+  console.log('analyzeWithAnthropic: Prompt length:', prompt.length);
+
   const message = await anthropic.messages.create({
     model: "claude-3-5-sonnet-20241022",
     max_tokens: 4096,
@@ -80,6 +86,7 @@ Format your response as a structured JSON with the following schema:
     ],
   });
 
+  console.log('analyzeWithAnthropic: API call successful, processing response...');
   const content = message.content[0];
   if (content.type === "text") {
     // Extract JSON from the response
@@ -119,15 +126,21 @@ export async function POST(request: Request) {
     }
 
     // Initialize Anthropic client
+    console.log('Initializing Anthropic client...');
     const anthropic = new Anthropic({
       apiKey: anthropicKey,
     });
+    console.log('Anthropic client initialized successfully');
 
     // Fetch PageSpeed data
+    console.log('Fetching PageSpeed data...');
     const pageSpeedData = await fetchPageSpeedData(url, pageSpeedKey);
+    console.log('PageSpeed data fetched successfully');
 
     // Analyze with Claude
+    console.log('Starting Claude analysis...');
     const analysis = await analyzeWithAnthropic(url, pageSpeedData, anthropic);
+    console.log('Claude analysis completed successfully');
 
     return NextResponse.json({
       success: true,
