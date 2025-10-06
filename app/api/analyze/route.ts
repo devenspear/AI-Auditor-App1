@@ -1,6 +1,18 @@
 import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 
+interface PageSpeedData {
+  lighthouseResult?: {
+    categories?: {
+      performance?: { score: number };
+      accessibility?: { score: number };
+      "best-practices"?: { score: number };
+      seo?: { score: number };
+    };
+  };
+  [key: string]: unknown;
+}
+
 function isValidHttpsUrl(value: string): boolean {
   try {
     const parsed = new URL(value);
@@ -10,7 +22,7 @@ function isValidHttpsUrl(value: string): boolean {
   }
 }
 
-async function fetchPageSpeedData(url: string, apiKey: string) {
+async function fetchPageSpeedData(url: string, apiKey: string): Promise<PageSpeedData> {
   const endpoint = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(url)}&key=${apiKey}&strategy=mobile&category=performance&category=accessibility&category=best-practices&category=seo`;
 
   const response = await fetch(endpoint);
@@ -21,7 +33,7 @@ async function fetchPageSpeedData(url: string, apiKey: string) {
   return response.json();
 }
 
-async function analyzeWithAnthropic(url: string, pageSpeedData: any, anthropic: Anthropic) {
+async function analyzeWithAnthropic(url: string, pageSpeedData: PageSpeedData, anthropic: Anthropic) {
   const prompt = `You are an expert web marketing and UX auditor. Analyze the following website and PageSpeed data, then provide actionable recommendations.
 
 Website URL: ${url}
