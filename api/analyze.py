@@ -157,28 +157,42 @@ def _resource_exists(url: str) -> bool:
 
 
 def collect_pagespeed(url: str) -> Dict[str, Any]:
-    LOGGER.info("Fetching PageSpeed Insights")
+    LOGGER.info("Fetching PageSpeed Insights (mobile only for speed)")
     key = os.environ.get("PAGESPEED_API_KEY")
-    mobile = _fetch_pagespeed(url, "mobile", key)
-    desktop = _fetch_pagespeed(url, "desktop", key)
 
-    core_vitals = _merge_core_web_vitals(mobile, desktop)
+    # Only fetch mobile to reduce API time from 40s+ to ~15s
+    mobile = _fetch_pagespeed(url, "mobile", key)
+
+    # Extract core vitals from mobile only
+    mobile_metrics = mobile.get("metrics", {})
+    lcp = mobile_metrics.get("LARGEST_CONTENTFUL_PAINT_MS", {}).get("category", "Not available")
+    fid = mobile_metrics.get("FIRST_INPUT_DELAY_MS", {}).get("category", "Not available")
+    cls = mobile_metrics.get("CUMULATIVE_LAYOUT_SHIFT_SCORE", {}).get("category", "Not available")
 
     return {
         "mobileScore": mobile.get("score"),
-        "desktopScore": desktop.get("score"),
-        "overallScore": _average_scores([mobile.get("score"), desktop.get("score")]),
-        "coreVitals": core_vitals,
+        "desktopScore": None,  # Skip desktop for performance
+        "overallScore": mobile.get("score") or 0,
+        "coreVitals": {
+            "lcp": lcp,
+            "fid": fid,
+            "cls": cls,
+        },
     }
 
 
 def _fetch_pagespeed(url: str, strategy: str, key: str | None) -> Dict[str, Any]:
-    params = {"url": url, "strategy": strategy}
+    # Only request performance category to speed up API response
+    params = {
+        "url": url,
+        "strategy": strategy,
+        "category": "performance"  # Only performance, skip accessibility/seo/best-practices
+    }
     if key:
         params["key"] = key
 
     try:
-        resp = requests.get(PAGESPEED_ENDPOINT, params=params, timeout=20)
+        resp = requests.get(PAGESPEED_ENDPOINT, params=params, timeout=15)
         resp.raise_for_status()
         payload = resp.json()
     except requests.RequestException as exc:  # pragma: no cover - network dependent

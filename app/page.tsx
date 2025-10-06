@@ -178,7 +178,7 @@ export default function Home() {
             <input
               value={url}
               onChange={(event) => setUrl(event.target.value)}
-              placeholder="Enter a public website URL"
+              placeholder="https://example.com"
               className="w-full rounded-xl border border-input bg-card px-4 py-3 text-base shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
               type="url"
               required
