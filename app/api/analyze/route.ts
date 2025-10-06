@@ -134,10 +134,10 @@ export async function POST(request: Request) {
       url,
       analysis,
       pageSpeedData: {
-        performanceScore: pageSpeedData.lighthouseResult?.categories?.performance?.score * 100,
-        accessibilityScore: pageSpeedData.lighthouseResult?.categories?.accessibility?.score * 100,
-        bestPracticesScore: pageSpeedData.lighthouseResult?.categories?.["best-practices"]?.score * 100,
-        seoScore: pageSpeedData.lighthouseResult?.categories?.seo?.score * 100,
+        performanceScore: (pageSpeedData.lighthouseResult?.categories?.performance?.score ?? 0) * 100,
+        accessibilityScore: (pageSpeedData.lighthouseResult?.categories?.accessibility?.score ?? 0) * 100,
+        bestPracticesScore: (pageSpeedData.lighthouseResult?.categories?.["best-practices"]?.score ?? 0) * 100,
+        seoScore: (pageSpeedData.lighthouseResult?.categories?.seo?.score ?? 0) * 100,
       },
     });
   } catch (error) {
