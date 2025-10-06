@@ -132,12 +132,23 @@ export async function POST(request: Request) {
     });
     console.log('Anthropic client initialized successfully');
 
-    // Fetch PageSpeed data
+    // Fetch PageSpeed data (optional - continue even if it fails)
     console.log('Fetching PageSpeed data...');
-    const pageSpeedData = await fetchPageSpeedData(url, pageSpeedKey);
-    console.log('PageSpeed data fetched successfully');
-    console.log('PageSpeed performance score:', pageSpeedData.lighthouseResult?.categories?.performance?.score);
-    console.log('PageSpeed full data sample:', JSON.stringify(pageSpeedData).substring(0, 500));
+    let pageSpeedData: PageSpeedData = {};
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
+      pageSpeedData = await fetchPageSpeedData(url, pageSpeedKey);
+      clearTimeout(timeoutId);
+
+      console.log('PageSpeed data fetched successfully');
+      console.log('PageSpeed performance score:', pageSpeedData.lighthouseResult?.categories?.performance?.score);
+      console.log('PageSpeed full data sample:', JSON.stringify(pageSpeedData).substring(0, 500));
+    } catch (pageSpeedError) {
+      console.warn('PageSpeed API failed, continuing without it:', pageSpeedError instanceof Error ? pageSpeedError.message : String(pageSpeedError));
+      // Continue analysis without PageSpeed data
+    }
 
     // Analyze with Claude
     console.log('Starting Claude analysis...');
