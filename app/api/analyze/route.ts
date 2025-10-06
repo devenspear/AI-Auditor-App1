@@ -136,11 +136,22 @@ export async function POST(request: Request) {
     console.log('Fetching PageSpeed data...');
     const pageSpeedData = await fetchPageSpeedData(url, pageSpeedKey);
     console.log('PageSpeed data fetched successfully');
+    console.log('PageSpeed performance score:', pageSpeedData.lighthouseResult?.categories?.performance?.score);
+    console.log('PageSpeed full data sample:', JSON.stringify(pageSpeedData).substring(0, 500));
 
     // Analyze with Claude
     console.log('Starting Claude analysis...');
-    const analysis = await analyzeWithAnthropic(url, pageSpeedData, anthropic);
-    console.log('Claude analysis completed successfully');
+    let analysis;
+    try {
+      analysis = await analyzeWithAnthropic(url, pageSpeedData, anthropic);
+      console.log('Claude analysis completed successfully');
+    } catch (anthropicError) {
+      console.error('Anthropic API error details:', anthropicError);
+      console.error('Error type:', anthropicError instanceof Error ? anthropicError.constructor.name : typeof anthropicError);
+      console.error('Error message:', anthropicError instanceof Error ? anthropicError.message : String(anthropicError));
+      console.error('Error stack:', anthropicError instanceof Error ? anthropicError.stack : 'No stack trace');
+      throw anthropicError;
+    }
 
     return NextResponse.json({
       success: true,
