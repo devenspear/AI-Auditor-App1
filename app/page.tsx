@@ -113,6 +113,20 @@ export default function Home() {
     event.preventDefault();
     if (!url) return;
 
+    // Validate URL format before submission
+    try {
+      const parsedUrl = new URL(url);
+      if (parsedUrl.protocol !== "https:" && parsedUrl.protocol !== "http:") {
+        setError("Please enter a valid HTTP or HTTPS URL");
+        setStatus("error");
+        return;
+      }
+    } catch {
+      setError("Please enter a valid URL (e.g., https://example.com)");
+      setStatus("error");
+      return;
+    }
+
     setStatus("loading");
     setError(null);
 
@@ -175,7 +189,7 @@ export default function Home() {
           </form>
           <p className="mt-4 text-sm text-muted-foreground">
             We run a multi-step audit: on-page clarity, PageSpeed performance, and an AI
-            brand assessment powered by Claude Sonnet.
+            brand assessment powered by GPT-4.
           </p>
 
           {status === "loading" && <LoadingState />}
@@ -240,7 +254,7 @@ function LoadingState() {
           <p className="text-lg font-semibold">Running full-stack analysis…</p>
           <p className="text-sm text-muted-foreground">
             Scraping site content, fetching PageSpeed Insights, and routing data through
-            Claude Sonnet for strategic scoring.
+            GPT-4 for strategic scoring.
           </p>
         </div>
       </div>
@@ -441,7 +455,7 @@ function ContentSection({ report }: { report: AnalysisReport }) {
         <div>
           <h3 className="text-xl font-semibold">Themes AI Associates with You</h3>
           <p className="mt-2 text-sm text-muted-foreground">
-            These represent the top topics Claude identified across the scraped body
+            These represent the top topics GPT-4 identified across the scraped body
             content. Strengthen alignment between these themes and your commercial
             intent.
           </p>
@@ -490,7 +504,7 @@ function ActionPlanSection({ report }: { report: AnalysisReport }) {
     <section className="rounded-2xl border border-border bg-card p-8 shadow-sm">
       <h3 className="text-xl font-semibold">Top Priorities for the Next 90 Days</h3>
       <p className="mt-2 text-sm text-muted-foreground">
-        Claude consolidates every signal into a focused action plan, scored by impact
+        GPT-4 consolidates every signal into a focused action plan, scored by impact
         and effort so your team knows where to move first.
       </p>
       <div className="mt-6 space-y-4">

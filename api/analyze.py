@@ -15,9 +15,9 @@ import requests
 from bs4 import BeautifulSoup
 
 try:
-    from anthropic import Anthropic
-except ImportError:  # pragma: no cover - anthropic may not be installed locally yet
-    Anthropic = None  # type: ignore
+    from openai import OpenAI
+except ImportError:  # pragma: no cover - openai may not be installed locally yet
+    OpenAI = None  # type: ignore
 
 logging.basicConfig(level=logging.INFO)
 LOGGER = logging.getLogger("ai_auditor")
@@ -27,7 +27,7 @@ USER_AGENT = (
     "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
 )
 PAGESPEED_ENDPOINT = "https://www.googleapis.com/pagespeedonline/v5/runPagespeed"
-CLAUDE_MODEL = "claude-3-5-sonnet-20241022"
+OPENAI_MODEL = "gpt-4-turbo-preview"
 
 
 class handler(BaseHTTPRequestHandler):
@@ -84,10 +84,10 @@ class AuditorError(Exception):
 def orchestrate_analysis(url: str) -> Dict[str, Any]:
     scraped = scrape_site(url)
     performance = collect_pagespeed(url)
-    claude_analysis = run_claude_brand_analysis(scraped, performance)
-    recommendations = run_claude_action_plan(scraped, performance, claude_analysis)
+    openai_analysis = run_openai_brand_analysis(scraped, performance)
+    recommendations = run_openai_action_plan(scraped, performance, openai_analysis)
 
-    report = format_report(url, scraped, performance, claude_analysis, recommendations)
+    report = format_report(url, scraped, performance, openai_analysis, recommendations)
     return report
 
 
@@ -210,13 +210,13 @@ def _average_scores(scores: List[Any]) -> int:
     return int(sum(valid) / len(valid))
 
 
-def run_claude_brand_analysis(
+def run_openai_brand_analysis(
     scraped: Dict[str, Any], performance: Dict[str, Any]
 ) -> Dict[str, Any]:
-    LOGGER.info("Running Claude brand analysis")
-    client = _anthropic_client()
+    LOGGER.info("Running OpenAI brand analysis")
+    client = _openai_client()
     if client is None:
-        raise AuditorError("Anthropic client not available. Set ANTHROPIC_API_KEY.")
+        raise AuditorError("OpenAI client not available. Set OPENAI_API_KEY.")
 
     system_prompt = (
         "You are an AI marketing strategist. Analyze website content for brand clarity, "
@@ -232,44 +232,38 @@ def run_claude_brand_analysis(
         "performance": performance,
     }
 
-    response = client.messages.create(
-        model=CLAUDE_MODEL,
-        max_output_tokens=1200,
-        temperature=0.2,
-        system=system_prompt,
-        response_format={"type": "json_object"},
-        messages=[
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": (
-                            "Return a JSON object with keys: summary, brandVoiceScore (0-100), "
-                            "geoReadinessScore (0-100), technicalHealthScore (0-100), readabilityLevel, "
-                            "keyThemes (array of strings), clarityNotes (array of strings), "
-                            "narrativeInsights (array of objects with headline and body).\n\n"
-                            "Analyze this website snapshot:\n" + json.dumps(prompt)
-                        ),
-                    }
-                ],
-            }
-        ],
+    user_prompt = (
+        "Return a JSON object with keys: summary, brandVoiceScore (0-100), "
+        "geoReadinessScore (0-100), technicalHealthScore (0-100), readabilityLevel, "
+        "keyThemes (array of strings), clarityNotes (array of strings), "
+        "narrativeInsights (array of objects with headline and body).\n\n"
+        "Analyze this website snapshot:\n" + json.dumps(prompt)
     )
 
-    content = response.content[0].text  # type: ignore[assignment]
+    response = client.chat.completions.create(
+        model=OPENAI_MODEL,
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt}
+        ],
+        temperature=0.2,
+        max_tokens=1200,
+        response_format={"type": "json_object"},
+    )
+
+    content = response.choices[0].message.content
     return json.loads(content)
 
 
-def run_claude_action_plan(
+def run_openai_action_plan(
     scraped: Dict[str, Any],
     performance: Dict[str, Any],
     analysis: Dict[str, Any],
 ) -> List[Dict[str, Any]]:
-    LOGGER.info("Generating Claude action plan")
-    client = _anthropic_client()
+    LOGGER.info("Generating OpenAI action plan")
+    client = _openai_client()
     if client is None:
-        raise AuditorError("Anthropic client not available. Set ANTHROPIC_API_KEY.")
+        raise AuditorError("OpenAI client not available. Set OPENAI_API_KEY.")
 
     payload = {
         "scraped": scraped,
@@ -277,35 +271,29 @@ def run_claude_action_plan(
         "analysis": analysis,
     }
 
-    response = client.messages.create(
-        model=CLAUDE_MODEL,
-        max_output_tokens=800,
-        temperature=0.4,
-        system="Return strategic marketing actions formatted as JSON.",
-        response_format={"type": "json_object"},
-        messages=[
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": (
-                            "Return a JSON object with key actionPlan as an array of exactly three "
-                            "items. Each item must include title, summary, category (Quick Win, "
-                            "Opportunity, or Foundation), and impact (High, Medium, Low). Actions "
-                            "must be specific to AI readiness and GEO strategy.\n\n" + json.dumps(payload)
-                        ),
-                    }
-                ],
-            }
-        ],
+    user_prompt = (
+        "Return a JSON object with key actionPlan as an array of exactly three "
+        "items. Each item must include title, summary, category (Quick Win, "
+        "Opportunity, or Foundation), and impact (High, Medium, Low). Actions "
+        "must be specific to AI readiness and GEO strategy.\n\n" + json.dumps(payload)
     )
 
-    content = response.content[0].text  # type: ignore[assignment]
+    response = client.chat.completions.create(
+        model=OPENAI_MODEL,
+        messages=[
+            {"role": "system", "content": "Return strategic marketing actions formatted as JSON."},
+            {"role": "user", "content": user_prompt}
+        ],
+        temperature=0.4,
+        max_tokens=800,
+        response_format={"type": "json_object"},
+    )
+
+    content = response.choices[0].message.content
     data = json.loads(content)
     plan = data.get("actionPlan")
     if not isinstance(plan, list):
-        raise AuditorError("Claude action plan response missing actionPlan array")
+        raise AuditorError("OpenAI action plan response missing actionPlan array")
     return plan
 
 
@@ -389,11 +377,11 @@ def _is_valid_url(value: str) -> bool:
         return False
 
 
-def _anthropic_client() -> Anthropic | None:
-    api_key = os.environ.get("ANTHROPIC_API_KEY")
-    if not api_key or Anthropic is None:
+def _openai_client() -> OpenAI | None:
+    api_key = os.environ.get("OPENAI_API_KEY")
+    if not api_key or OpenAI is None:
         return None
-    return Anthropic(api_key=api_key)
+    return OpenAI(api_key=api_key)
 
 
 if __name__ == "__main__":  # pragma: no cover - manual testing helper
