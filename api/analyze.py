@@ -83,7 +83,23 @@ class AuditorError(Exception):
 
 def orchestrate_analysis(url: str) -> Dict[str, Any]:
     scraped = scrape_site(url)
-    performance = collect_pagespeed(url)
+
+    # PageSpeed is optional - continue if it fails
+    try:
+        performance = collect_pagespeed(url)
+    except Exception as exc:
+        LOGGER.warning("PageSpeed collection failed, continuing without it: %s", exc)
+        performance = {
+            "mobileScore": None,
+            "desktopScore": None,
+            "overallScore": 0,
+            "coreVitals": {
+                "lcp": "Not available",
+                "fid": "Not available",
+                "cls": "Not available",
+            },
+        }
+
     openai_analysis = run_openai_brand_analysis(scraped, performance)
     recommendations = run_openai_action_plan(scraped, performance, openai_analysis)
 
@@ -162,7 +178,7 @@ def _fetch_pagespeed(url: str, strategy: str, key: str | None) -> Dict[str, Any]
         params["key"] = key
 
     try:
-        resp = requests.get(PAGESPEED_ENDPOINT, params=params, timeout=45)
+        resp = requests.get(PAGESPEED_ENDPOINT, params=params, timeout=20)
         resp.raise_for_status()
         payload = resp.json()
     except requests.RequestException as exc:  # pragma: no cover - network dependent
