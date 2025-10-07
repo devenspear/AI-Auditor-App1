@@ -118,16 +118,23 @@ export default function Home() {
     event.preventDefault();
     if (!url) return;
 
+    // Auto-prepend https:// if missing protocol
+    let formattedUrl = url.trim();
+    if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
+      formattedUrl = 'https://' + formattedUrl;
+      setUrl(formattedUrl);
+    }
+
     // Validate URL format before submission
     try {
-      const parsedUrl = new URL(url);
+      const parsedUrl = new URL(formattedUrl);
       if (parsedUrl.protocol !== "https:" && parsedUrl.protocol !== "http:") {
         setError("Please enter a valid HTTP or HTTPS URL");
         setStatus("error");
         return;
       }
     } catch {
-      setError("Please enter a valid URL (e.g., https://example.com)");
+      setError("Please enter a valid URL (e.g., example.com or https://example.com)");
       setStatus("error");
       return;
     }
@@ -141,7 +148,7 @@ export default function Home() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ url } satisfies AnalysisRequestBody),
+        body: JSON.stringify({ url: formattedUrl } satisfies AnalysisRequestBody),
       });
 
       if (!response.ok) {

@@ -27,7 +27,7 @@ USER_AGENT = (
     "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
 )
 PAGESPEED_ENDPOINT = "https://www.googleapis.com/pagespeedonline/v5/runPagespeed"
-OPENAI_MODEL = "gpt-4-turbo-preview"
+OPENAI_MODEL = "gpt-4o"  # Latest GPT-4 Omni - 2x faster, 50% cheaper, better quality
 
 
 class handler(BaseHTTPRequestHandler):
