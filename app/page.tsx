@@ -13,6 +13,8 @@ import {
   ErrorResponse,
 } from "@/lib/report-types";
 
+// Demo report for testing (unused in production)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const demoReport: AnalysisReport = {
   url: "https://www.hillwoodcommunities.com/lifestyle-communities/treeline/",
   analyzedAt: new Date().toISOString(),
@@ -413,7 +415,7 @@ function ScoreCard({ title, value, description, delay }: {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: delay / 1000 }}
-      whileHover={{ y: -4, shadow: "0 20px 25px -5px rgb(0 0 0 / 0.1)" }}
+      whileHover={{ y: -4, boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.1)" }}
       className="group rounded-xl border border-border bg-gradient-to-br from-card to-card/50 p-6 shadow-md hover:shadow-xl hover:border-primary/30 transition-all duration-300"
     >
       <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground group-hover:text-primary transition-colors">
