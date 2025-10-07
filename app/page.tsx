@@ -1,8 +1,11 @@
 "use client";
 
 import { FormEvent, useMemo, useState } from "react";
+import { motion } from "framer-motion";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { Button } from "@/components/ui/button";
+import { CircularProgress } from "@/components/ui/circular-progress";
+import { useCountUp } from "@/hooks/use-count-up";
 import { designSystem } from "@/lib/design-system";
 import {
   AnalysisReport,
@@ -272,77 +275,168 @@ interface ReportHeaderProps {
 
 function ReportHeader({ url, analyzedAt, grade, overallScore, summary }: ReportHeaderProps) {
   return (
-    <section className="rounded-2xl border border-border bg-card p-8 shadow-sm">
+    <motion.section
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="rounded-2xl border border-border bg-gradient-to-br from-card to-card/50 p-8 shadow-lg backdrop-blur-sm"
+    >
       <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
-        <div className="space-y-3">
-          <p className="text-sm font-semibold uppercase tracking-widest text-muted-foreground">
+        <div className="space-y-3 flex-1">
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="text-sm font-semibold uppercase tracking-widest text-muted-foreground"
+          >
             AI Readiness Report
-          </p>
-          <h2 className="text-2xl font-bold md:text-3xl">{url}</h2>
-          <p className="text-sm text-muted-foreground">Analyzed on {analyzedAt}</p>
-          <p className="text-base text-muted-foreground">{summary}</p>
+          </motion.p>
+          <motion.h2
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3 }}
+            className="text-2xl font-bold md:text-3xl bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent"
+          >
+            {url}
+          </motion.h2>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+            className="text-sm text-muted-foreground"
+          >
+            Analyzed on {analyzedAt}
+          </motion.p>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="text-base text-muted-foreground leading-relaxed"
+          >
+            {summary}
+          </motion.p>
         </div>
-        <div className="flex items-center gap-6">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.6, duration: 0.5 }}
+          className="flex items-center gap-8"
+        >
           <div className="text-center">
-            <p className="text-5xl font-bold text-primary">{grade}</p>
-            <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">
+            <motion.p
+              initial={{ opacity: 0, scale: 0 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.8, type: "spring", stiffness: 200 }}
+              className="text-6xl font-bold text-primary drop-shadow-lg"
+            >
+              {grade}
+            </motion.p>
+            <p className="mt-2 text-xs font-medium uppercase tracking-widest text-muted-foreground">
               Overall Grade
             </p>
           </div>
-          <div className="relative flex size-32 items-center justify-center rounded-full bg-primary/10">
-            <div className="absolute inset-0 rounded-full border-8 border-primary/20" />
-            <span className="text-3xl font-bold text-primary">{overallScore}</span>
-          </div>
-        </div>
+          <CircularProgress value={overallScore} delay={700} size={140} strokeWidth={10} />
+        </motion.div>
       </div>
-    </section>
+    </motion.section>
   );
 }
 
 function ScoreGrid({ report }: { report: AnalysisReport }) {
+  const scores = [
+    {
+      title: "Brand Voice Score",
+      value: report.score.brandVoice,
+      description: "Assesses clarity, consistency, and confidence across the entire narrative.",
+      delay: 0,
+    },
+    {
+      title: "GEO Readiness",
+      value: report.score.geoReadiness,
+      description: "Measures how well content structure answers multi-intent questions for AI search.",
+      delay: 100,
+    },
+    {
+      title: "Technical Health",
+      value: report.score.technicalHealth,
+      description: "Pulls from PageSpeed, Core Web Vitals, and structured data signals surfaced during the audit.",
+      delay: 200,
+    },
+  ];
+
   return (
     <section className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-      <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
-        <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Brand Voice Score
-        </p>
-        <p className="mt-2 text-4xl font-bold text-primary">{report.score.brandVoice}</p>
-        <p className="mt-4 text-sm text-muted-foreground">
-          Assesses clarity, consistency, and confidence across the entire narrative.
-        </p>
-      </div>
-      <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
-        <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          GEO Readiness
-        </p>
-        <p className="mt-2 text-4xl font-bold text-primary">{report.score.geoReadiness}</p>
-        <p className="mt-4 text-sm text-muted-foreground">
-          Measures how well content structure answers multi-intent questions for AI search.
-        </p>
-      </div>
-      <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
-        <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Technical Health
-        </p>
-        <p className="mt-2 text-4xl font-bold text-primary">{report.score.technicalHealth}</p>
-        <p className="mt-4 text-sm text-muted-foreground">
-          Pulls from PageSpeed, Core Web Vitals, and structured data signals surfaced during the audit.
-        </p>
-      </div>
-      <div className="rounded-xl border border-primary/20 bg-primary/5 p-6 shadow-sm md:col-span-2 lg:col-span-3">
-        <p className="text-sm font-semibold uppercase tracking-wide text-primary">
+      {scores.map((score) => (
+        <ScoreCard key={score.title} {...score} />
+      ))}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+        className="rounded-xl border border-primary/20 bg-gradient-to-br from-primary/10 to-primary/5 p-6 shadow-md md:col-span-2 lg:col-span-3"
+      >
+        <p className="text-sm font-semibold uppercase tracking-wide text-primary flex items-center gap-2">
+          <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
           Clarity Signals
         </p>
-        <ul className="mt-3 space-y-2">
-          {report.score.clarityNotes.map((note) => (
-            <li key={note} className="flex gap-3 text-sm text-primary">
-              <span>•</span>
+        <ul className="mt-4 space-y-3">
+          {report.score.clarityNotes.map((note, index) => (
+            <motion.li
+              key={note}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.5 + index * 0.1 }}
+              className="flex gap-3 text-sm text-foreground/90"
+            >
+              <span className="mt-0.5 flex-shrink-0 size-1.5 rounded-full bg-primary" />
               <span>{note}</span>
-            </li>
+            </motion.li>
           ))}
         </ul>
-      </div>
+      </motion.div>
     </section>
+  );
+}
+
+function ScoreCard({ title, value, description, delay }: {
+  title: string;
+  value: number;
+  description: string;
+  delay: number;
+}) {
+  const animatedValue = useCountUp(value, 2000, delay);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: delay / 1000 }}
+      whileHover={{ y: -4, shadow: "0 20px 25px -5px rgb(0 0 0 / 0.1)" }}
+      className="group rounded-xl border border-border bg-gradient-to-br from-card to-card/50 p-6 shadow-md hover:shadow-xl hover:border-primary/30 transition-all duration-300"
+    >
+      <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground group-hover:text-primary transition-colors">
+        {title}
+      </p>
+      <div className="mt-3 flex items-baseline gap-2">
+        <p className="text-5xl font-bold bg-gradient-to-br from-primary to-primary/60 bg-clip-text text-transparent">
+          {animatedValue}
+        </p>
+        <span className="text-sm text-muted-foreground">/100</span>
+      </div>
+      <div className="mt-2 h-2 rounded-full bg-muted overflow-hidden">
+        <motion.div
+          className="h-full bg-gradient-to-r from-primary to-primary/60"
+          initial={{ width: 0 }}
+          animate={{ width: `${value}%` }}
+          transition={{ duration: 1.5, delay: (delay + 500) / 1000, ease: "easeOut" }}
+        />
+      </div>
+      <p className="mt-4 text-sm text-muted-foreground leading-relaxed">
+        {description}
+      </p>
+    </motion.div>
   );
 }
 
