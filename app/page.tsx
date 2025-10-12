@@ -122,7 +122,6 @@ export default function Home() {
     let formattedUrl = url.trim();
     if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
       formattedUrl = 'https://' + formattedUrl;
-      setUrl(formattedUrl);
     }
 
     // Validate URL format before submission
@@ -192,7 +191,7 @@ export default function Home() {
               onChange={(event) => setUrl(event.target.value)}
               placeholder="https://example.com"
               className="w-full rounded-xl border border-input bg-card px-4 py-3 text-base shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-              type="url"
+              type="text"
               required
             />
             <Button size="lg" className="sm:w-auto" disabled={status === "loading"}>
@@ -243,9 +242,10 @@ export default function Home() {
 function HeaderSection() {
   return (
     <section className="text-center">
-      <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-2 text-sm font-medium text-primary">
-        Overabove™ AI Auditor
-      </div>
+      {/* Logo placeholder - replace with new logo in future */}
+      {/* <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-2 text-sm font-medium text-primary">
+        Brand™ AI Auditor
+      </div> */}
       <h1 className="mt-6 text-4xl font-bold tracking-tight md:text-5xl">
         Transform any website into a strategic AI roadmap
       </h1>

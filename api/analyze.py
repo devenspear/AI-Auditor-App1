@@ -19,6 +19,11 @@ try:
 except ImportError:  # pragma: no cover - openai may not be installed locally yet
     OpenAI = None  # type: ignore
 
+try:
+    from anthropic import Anthropic
+except ImportError:  # pragma: no cover - anthropic may not be installed locally yet
+    Anthropic = None  # type: ignore
+
 logging.basicConfig(level=logging.INFO)
 LOGGER = logging.getLogger("ai_auditor")
 
@@ -28,6 +33,7 @@ USER_AGENT = (
 )
 PAGESPEED_ENDPOINT = "https://www.googleapis.com/pagespeedonline/v5/runPagespeed"
 OPENAI_MODEL = "gpt-4o"  # Latest GPT-4 Omni - 2x faster, 50% cheaper, better quality
+CLAUDE_MODEL = "claude-3-5-sonnet-20241022"  # Claude 3.5 Sonnet - excellent for deep content analysis
 
 
 class handler(BaseHTTPRequestHandler):
@@ -100,7 +106,19 @@ def orchestrate_analysis(url: str) -> Dict[str, Any]:
             },
         }
 
+    # Run GPT-4o for initial analysis
     openai_analysis = run_openai_brand_analysis(scraped, performance)
+
+    # Run Claude for enhanced narrative insights (optional - gracefully fail if unavailable)
+    try:
+        claude_insights = run_claude_narrative_analysis(scraped, openai_analysis)
+        # Merge Claude's deeper narrative insights with OpenAI's analysis
+        if claude_insights and "narrativeInsights" in claude_insights:
+            openai_analysis["narrativeInsights"] = claude_insights["narrativeInsights"]
+            LOGGER.info("Enhanced report with Claude narrative analysis")
+    except Exception as exc:
+        LOGGER.warning("Claude analysis skipped: %s", exc)
+
     recommendations = run_openai_action_plan(scraped, performance, openai_analysis)
 
     report = format_report(url, scraped, performance, openai_analysis, recommendations)
@@ -399,6 +417,62 @@ def _score_to_grade(score: int) -> str:
     return "F"
 
 
+def run_claude_narrative_analysis(
+    scraped: Dict[str, Any],
+    openai_analysis: Dict[str, Any],
+) -> Dict[str, Any]:
+    """Use Claude for deeper narrative insights and storytelling analysis."""
+    LOGGER.info("Running Claude narrative analysis")
+    client = _anthropic_client()
+    if client is None:
+        raise AuditorError("Claude client not available. Set ANTHROPIC_API_KEY.")
+
+    # Build context for Claude
+    context = {
+        "content": scraped.get("text", "")[:10000],  # Limit for efficiency
+        "title": scraped.get("title"),
+        "h1": scraped.get("h1"),
+        "keyThemes": openai_analysis.get("keyThemes", []),
+        "brandVoiceScore": openai_analysis.get("brandVoiceScore"),
+        "geoReadinessScore": openai_analysis.get("geoReadinessScore"),
+    }
+
+    prompt = f"""You are a senior marketing strategist analyzing website content.
+
+Based on this website data:
+{json.dumps(context, indent=2)}
+
+Provide 2-3 deep narrative insights that focus on marketing strategy and brand positioning. Each insight should:
+1. Have a compelling headline (3-6 words)
+2. Provide strategic analysis in the body (2-3 sentences)
+3. Focus on marketing impact, not technical details
+
+Return valid JSON with this structure:
+{{
+  "narrativeInsights": [
+    {{"headline": "Strategic headline", "body": "Deep marketing insight..."}}
+  ]
+}}"""
+
+    response = client.messages.create(
+        model=CLAUDE_MODEL,
+        max_tokens=1024,
+        temperature=0.3,
+        messages=[
+            {"role": "user", "content": prompt}
+        ]
+    )
+
+    # Extract text content from Claude's response
+    content_text = ""
+    for block in response.content:
+        if hasattr(block, 'text'):
+            content_text = block.text
+            break
+
+    return json.loads(content_text)
+
+
 def _is_valid_url(value: str) -> bool:
     try:
         parsed = urlparse(value)
@@ -412,6 +486,14 @@ def _openai_client() -> OpenAI | None:
     if not api_key or OpenAI is None:
         return None
     return OpenAI(api_key=api_key)
+
+
+def _anthropic_client() -> Anthropic | None:
+    """Initialize Anthropic client if API key is available."""
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    if not api_key or Anthropic is None:
+        return None
+    return Anthropic(api_key=api_key)
 
 
 if __name__ == "__main__":  # pragma: no cover - manual testing helper
