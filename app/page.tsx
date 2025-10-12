@@ -228,6 +228,9 @@ export default function Home() {
               />
               <ScoreGrid report={report} />
               <PerformanceSection report={report} />
+              {(report.ssl || report.security) && <SecuritySection report={report} />}
+              {report.socialTags && <SocialTagsSection report={report} />}
+              {report.schema && <SchemaSection report={report} />}
               <ContentSection report={report} />
               <InsightsSection report={report} />
               <ActionPlanSection report={report} />
@@ -635,6 +638,217 @@ function ActionPlanSection({ report }: { report: AnalysisReport }) {
           </div>
         ))}
       </div>
+    </section>
+  );
+}
+
+function SecuritySection({ report }: { report: AnalysisReport }) {
+  const { ssl, security } = report;
+
+  return (
+    <section className="rounded-2xl border border-border bg-card p-8 shadow-sm">
+      <h3 className="text-xl font-semibold">Security & Trust Signals</h3>
+      <p className="mt-2 text-sm text-muted-foreground">
+        SSL certificates and security headers help build user trust and improve search rankings.
+      </p>
+      <div className="mt-6 grid gap-6 md:grid-cols-2">
+        {ssl && (
+          <div className="rounded-xl border border-border bg-background p-6">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                SSL/TLS Certificate
+              </h4>
+              <span className={`rounded-full px-3 py-1 text-xs font-bold ${
+                ssl.grade === 'A' || ssl.grade === 'A+' || ssl.grade === 'B'
+                  ? 'bg-green-100 text-green-800'
+                  : ssl.grade === 'F'
+                  ? 'bg-red-100 text-red-800'
+                  : 'bg-yellow-100 text-yellow-800'
+              }`}>
+                Grade: {ssl.grade}
+              </span>
+            </div>
+            <div className="mt-4 space-y-2 text-sm">
+              <p>
+                <span className="text-muted-foreground">Status: </span>
+                <span className="font-medium">
+                  {ssl.hasSSL ? '✓ Secured with HTTPS' : '✗ No SSL detected'}
+                </span>
+              </p>
+              {ssl.validUntil && (
+                <p>
+                  <span className="text-muted-foreground">Valid Until: </span>
+                  <span className="font-medium">{ssl.validUntil}</span>
+                </p>
+              )}
+              {ssl.message && (
+                <p className="text-muted-foreground">{ssl.message}</p>
+              )}
+            </div>
+          </div>
+        )}
+        {security && (
+          <div className="rounded-xl border border-border bg-background p-6">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                Security Headers
+              </h4>
+              {security.checked && (
+                <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-bold text-blue-800">
+                  Grade: {security.grade}
+                </span>
+              )}
+            </div>
+            <div className="mt-4 text-sm">
+              <p className="text-muted-foreground">
+                {security.checked
+                  ? 'Security headers help protect against common web vulnerabilities.'
+                  : 'Unable to check security headers at this time.'}
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function SocialTagsSection({ report }: { report: AnalysisReport }) {
+  const { socialTags } = report;
+  if (!socialTags) return null;
+
+  return (
+    <section className="rounded-2xl border border-border bg-card p-8 shadow-sm">
+      <h3 className="text-xl font-semibold">Social Media Optimization</h3>
+      <p className="mt-2 text-sm text-muted-foreground">
+        Open Graph and Twitter Card tags control how your content appears when shared on social platforms.
+      </p>
+
+      <div className="mt-6 grid gap-6 md:grid-cols-2">
+        <div className="rounded-xl border border-border bg-background p-6">
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              Open Graph (Facebook)
+            </h4>
+            <span className="text-2xl font-bold text-primary">
+              {socialTags.openGraph.score}/100
+            </span>
+          </div>
+          <div className="mt-4 space-y-2 text-sm">
+            <p>
+              {socialTags.openGraph.hasOGTitle ? '✓' : '✗'}
+              <span className="ml-2">og:title</span>
+            </p>
+            <p>
+              {socialTags.openGraph.hasOGDescription ? '✓' : '✗'}
+              <span className="ml-2">og:description</span>
+            </p>
+            <p>
+              {socialTags.openGraph.hasOGImage ? '✓' : '✗'}
+              <span className="ml-2">og:image</span>
+            </p>
+            <p>
+              {socialTags.openGraph.hasOGUrl ? '✓' : '✗'}
+              <span className="ml-2">og:url</span>
+            </p>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-border bg-background p-6">
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              Twitter Cards
+            </h4>
+            <span className="text-2xl font-bold text-primary">
+              {socialTags.twitterCard.score}/100
+            </span>
+          </div>
+          <div className="mt-4 space-y-2 text-sm">
+            <p>
+              {socialTags.twitterCard.hasCard ? '✓' : '✗'}
+              <span className="ml-2">twitter:card</span>
+            </p>
+            <p>
+              {socialTags.twitterCard.hasTitle ? '✓' : '✗'}
+              <span className="ml-2">twitter:title</span>
+            </p>
+            <p>
+              {socialTags.twitterCard.hasDescription ? '✓' : '✗'}
+              <span className="ml-2">twitter:description</span>
+            </p>
+            <p>
+              {socialTags.twitterCard.hasImage ? '✓' : '✗'}
+              <span className="ml-2">twitter:image</span>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {socialTags.recommendations.length > 0 && (
+        <div className="mt-6 rounded-xl border border-primary/20 bg-primary/5 p-4">
+          <h4 className="text-sm font-semibold text-primary">Recommendations</h4>
+          <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+            {socialTags.recommendations.map((rec, idx) => (
+              <li key={idx}>• {rec}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function SchemaSection({ report }: { report: AnalysisReport }) {
+  const { schema } = report;
+  if (!schema) return null;
+
+  return (
+    <section className="rounded-2xl border border-border bg-card p-8 shadow-sm">
+      <h3 className="text-xl font-semibold">Structured Data (Schema.org)</h3>
+      <p className="mt-2 text-sm text-muted-foreground">
+        Schema markup helps search engines and AI systems understand your content for rich results and better visibility.
+      </p>
+
+      <div className="mt-6 rounded-xl border border-border bg-background p-6">
+        <div className="flex items-center justify-between">
+          <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            Schema Types Found
+          </h4>
+          <span className={`rounded-full px-3 py-1 text-xs font-bold ${
+            schema.hasSchema ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+          }`}>
+            {schema.count} {schema.count === 1 ? 'Schema' : 'Schemas'}
+          </span>
+        </div>
+
+        {schema.schemaTypes.length > 0 ? (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {schema.schemaTypes.map((type) => (
+              <span
+                key={type}
+                className="rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-sm font-medium text-primary"
+              >
+                {type}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-4 text-sm text-muted-foreground">
+            No structured data detected on this page.
+          </p>
+        )}
+      </div>
+
+      {schema.recommendations.length > 0 && (
+        <div className="mt-6 rounded-xl border border-primary/20 bg-primary/5 p-4">
+          <h4 className="text-sm font-semibold text-primary">Recommendations</h4>
+          <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+            {schema.recommendations.map((rec, idx) => (
+              <li key={idx}>• {rec}</li>
+            ))}
+          </ul>
+        </div>
+      )}
     </section>
   );
 }

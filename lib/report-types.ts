@@ -45,6 +45,55 @@ export interface NarrativeInsight {
   body: string;
 }
 
+export interface SecurityHeaders {
+  checked: boolean;
+  grade: string;
+  url?: string;
+  error?: string;
+}
+
+export interface SSLGrade {
+  hasSSL: boolean;
+  grade: string;
+  issuer?: Record<string, string>;
+  validUntil?: string;
+  message?: string;
+  error?: string;
+}
+
+export interface OpenGraphTags {
+  hasOGTitle: boolean;
+  hasOGDescription: boolean;
+  hasOGImage: boolean;
+  hasOGUrl: boolean;
+  score: number;
+  tags: Record<string, string | null>;
+}
+
+export interface TwitterCardTags {
+  hasCard: boolean;
+  hasTitle: boolean;
+  hasDescription: boolean;
+  hasImage: boolean;
+  score: number;
+  tags: Record<string, string | null>;
+}
+
+export interface SocialTags {
+  openGraph: OpenGraphTags;
+  twitterCard: TwitterCardTags;
+  overallScore: number;
+  recommendations: string[];
+}
+
+export interface SchemaMarkup {
+  hasSchema: boolean;
+  schemaTypes: string[];
+  count: number;
+  recommendations: string[];
+  rawData?: any[];
+}
+
 export interface AnalysisReport {
   url: string;
   analyzedAt: string;
@@ -56,6 +105,10 @@ export interface AnalysisReport {
   content: ContentSnapshot;
   narrative: NarrativeInsight[];
   actionPlan: AnalysisTask[];
+  security?: SecurityHeaders;
+  ssl?: SSLGrade;
+  socialTags?: SocialTags;
+  schema?: SchemaMarkup;
 }
 
 export interface AnalysisRequestBody {
