@@ -91,7 +91,7 @@ export interface SchemaMarkup {
   schemaTypes: string[];
   count: number;
   recommendations: string[];
-  rawData?: any[];
+  rawData?: Record<string, unknown>[];
 }
 
 export interface AnalysisReport {
