@@ -94,6 +94,16 @@ export interface SchemaMarkup {
   rawData?: Record<string, unknown>[];
 }
 
+export interface AhrefsMetrics {
+  available: boolean;
+  domainRating?: number;
+  backlinks?: number;
+  referringDomains?: number;
+  organicTraffic?: number;
+  organicKeywords?: number;
+  error?: string;
+}
+
 export interface AnalysisReport {
   url: string;
   analyzedAt: string;
@@ -109,6 +119,7 @@ export interface AnalysisReport {
   ssl?: SSLGrade;
   socialTags?: SocialTags;
   schema?: SchemaMarkup;
+  ahrefs?: AhrefsMetrics;
 }
 
 export interface AnalysisRequestBody {

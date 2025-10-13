@@ -112,6 +112,9 @@ def orchestrate_analysis(url: str) -> Dict[str, Any]:
     social_tags = analyze_social_tags(scraped)
     schema_data = extract_schema_markup(scraped)
 
+    # Get Ahrefs SEO metrics (optional - requires API key)
+    ahrefs_data = collect_ahrefs_metrics(url)
+
     # Run GPT-4o for initial analysis
     openai_analysis = run_openai_brand_analysis(scraped, performance)
 
@@ -129,7 +132,7 @@ def orchestrate_analysis(url: str) -> Dict[str, Any]:
 
     report = format_report(
         url, scraped, performance, openai_analysis, recommendations,
-        security_headers, ssl_grade, social_tags, schema_data
+        security_headers, ssl_grade, social_tags, schema_data, ahrefs_data
     )
     return report
 
@@ -221,26 +224,33 @@ def _resource_exists(url: str) -> bool:
 
 
 def collect_pagespeed(url: str) -> Dict[str, Any]:
-    LOGGER.info("Fetching PageSpeed Insights (mobile only for speed)")
+    LOGGER.info("Fetching PageSpeed Insights (mobile + desktop)")
     key = os.environ.get("PAGESPEED_API_KEY")
 
-    # Only fetch mobile to reduce API time from 40s+ to ~15s
+    # Fetch both mobile and desktop for comprehensive analysis
     mobile = _fetch_pagespeed(url, "mobile", key)
+    desktop = _fetch_pagespeed(url, "desktop", key)
 
-    # Extract core vitals from mobile only
-    mobile_metrics = mobile.get("metrics", {})
-    lcp = mobile_metrics.get("LARGEST_CONTENTFUL_PAINT_MS", {}).get("category", "Not available")
-    fid = mobile_metrics.get("FIRST_INPUT_DELAY_MS", {}).get("category", "Not available")
-    cls = mobile_metrics.get("CUMULATIVE_LAYOUT_SHIFT_SCORE", {}).get("category", "Not available")
+    # Extract core vitals from Lighthouse audits (more reliable than loadingExperience)
+    mobile_audits = mobile.get("audits", {})
+
+    # Get actual metric values from Lighthouse audits
+    lcp_value = mobile_audits.get("largest-contentful-paint", {}).get("displayValue", "Not available")
+    fid_value = mobile_audits.get("max-potential-fid", {}).get("displayValue", "Not available")
+    cls_value = mobile_audits.get("cumulative-layout-shift", {}).get("displayValue", "Not available")
+
+    mobile_score = mobile.get("score")
+    desktop_score = desktop.get("score")
+    overall = _average_scores([mobile_score, desktop_score])
 
     return {
-        "mobileScore": mobile.get("score"),
-        "desktopScore": None,  # Skip desktop for performance
-        "overallScore": mobile.get("score") or 0,
+        "mobileScore": mobile_score,
+        "desktopScore": desktop_score,
+        "overallScore": overall,
         "coreVitals": {
-            "lcp": lcp,
-            "fid": fid,
-            "cls": cls,
+            "lcp": lcp_value,
+            "fid": fid_value,
+            "cls": cls_value,
         },
     }
 
@@ -256,22 +266,24 @@ def _fetch_pagespeed(url: str, strategy: str, key: str | None) -> Dict[str, Any]
         params["key"] = key
 
     try:
-        resp = requests.get(PAGESPEED_ENDPOINT, params=params, timeout=15)
+        resp = requests.get(PAGESPEED_ENDPOINT, params=params, timeout=20)
         resp.raise_for_status()
         payload = resp.json()
     except requests.RequestException as exc:  # pragma: no cover - network dependent
         raise AuditorError(f"PageSpeed API failed for {strategy}: {exc}") from exc
 
-    categories = payload.get("lighthouseResult", {}).get("categories", {})
+    lighthouse_result = payload.get("lighthouseResult", {})
+    categories = lighthouse_result.get("categories", {})
     score = categories.get("performance", {}).get("score")
     if isinstance(score, (int, float)):
         score = round(score * 100)
 
-    metrics = payload.get("loadingExperience", {}).get("metrics", {})
+    # Get audits for Core Web Vitals
+    audits = lighthouse_result.get("audits", {})
 
     return {
         "score": score,
-        "metrics": metrics,
+        "audits": audits,
     }
 
 
@@ -392,21 +404,35 @@ def run_openai_action_plan(
 
 
 def check_security_headers(url: str) -> Dict[str, Any]:
-    """Check security headers using SecurityHeaders.com API (free)."""
+    """Check security headers using SecurityHeaders.com (free)."""
     LOGGER.info("Checking security headers")
     try:
         parsed = urlparse(url)
         domain = parsed.netloc
-        api_url = f"https://securityheaders.com/?q={domain}&followRedirects=on"
+        check_url = f"https://securityheaders.com/?q={domain}&followRedirects=on"
 
-        response = requests.get(api_url, headers={"User-Agent": USER_AGENT}, timeout=10)
+        response = requests.get(check_url, headers={"User-Agent": USER_AGENT}, timeout=10)
+        response.raise_for_status()
 
-        # Parse for grade (basic implementation - could be enhanced with HTML parsing)
-        # For now, return a basic assessment
+        # Parse HTML to extract grade
+        soup = BeautifulSoup(response.text, "html.parser")
+
+        # Find the grade element - SecurityHeaders.com uses specific classes
+        grade_elem = soup.find("div", class_="grade")
+        if not grade_elem:
+            grade_elem = soup.find("span", class_="grade")
+
+        grade = "Unknown"
+        if grade_elem:
+            grade_text = grade_elem.get_text(strip=True)
+            # Extract just the letter grade (A+, A, B, C, D, F, R)
+            if grade_text:
+                grade = grade_text[0] if len(grade_text) > 0 else "Unknown"
+
         return {
             "checked": True,
-            "grade": "Pending",  # Would need to parse HTML response for actual grade
-            "url": api_url
+            "grade": grade,
+            "url": check_url
         }
     except Exception as exc:
         LOGGER.warning("Security headers check failed: %s", exc)
@@ -555,6 +581,73 @@ def extract_schema_markup(scraped: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+def collect_ahrefs_metrics(url: str) -> Dict[str, Any] | None:
+    """Collect SEO metrics from Ahrefs API v2 (requires API key)."""
+    LOGGER.info("Collecting Ahrefs SEO metrics")
+    api_key = os.environ.get("AHREFS_API_KEY")
+
+    if not api_key:
+        LOGGER.info("Ahrefs API key not found, skipping SEO metrics")
+        return None
+
+    try:
+        parsed = urlparse(url)
+        domain = parsed.netloc
+
+        # Ahrefs API v2 endpoint for domain metrics
+        base_url = "https://apiv2.ahrefs.com"
+
+        # Get domain rating and backlink stats
+        params = {
+            "token": api_key,
+            "target": domain,
+            "mode": "domain",
+            "from": "domain_rating",
+            "output": "json"
+        }
+
+        response = requests.get(base_url, params=params, timeout=15)
+        response.raise_for_status()
+        data = response.json()
+
+        # Extract key metrics from response
+        domain_rating = data.get("domain", {}).get("domain_rating", 0)
+        backlinks = data.get("domain", {}).get("backlinks", 0)
+        referring_domains = data.get("domain", {}).get("refdomains", 0)
+
+        # Get organic traffic estimate (separate call)
+        traffic_params = {
+            "token": api_key,
+            "target": domain,
+            "mode": "domain",
+            "from": "metrics_extended",
+            "output": "json"
+        }
+
+        traffic_response = requests.get(base_url, params=traffic_params, timeout=15)
+        traffic_response.raise_for_status()
+        traffic_data = traffic_response.json()
+
+        organic_traffic = traffic_data.get("domain", {}).get("organic_traffic", 0)
+        organic_keywords = traffic_data.get("domain", {}).get("organic_keywords", 0)
+
+        return {
+            "domainRating": domain_rating,
+            "backlinks": backlinks,
+            "referringDomains": referring_domains,
+            "organicTraffic": organic_traffic,
+            "organicKeywords": organic_keywords,
+            "available": True
+        }
+
+    except Exception as exc:
+        LOGGER.warning("Ahrefs API failed: %s", exc)
+        return {
+            "available": False,
+            "error": str(exc)
+        }
+
+
 def format_report(
     url: str,
     scraped: Dict[str, Any],
@@ -565,6 +658,7 @@ def format_report(
     ssl_grade: Dict[str, Any] | None = None,
     social_tags: Dict[str, Any] | None = None,
     schema_data: Dict[str, Any] | None = None,
+    ahrefs_data: Dict[str, Any] | None = None,
 ) -> Dict[str, Any]:
     summary = analysis.get("summary", "")
     readability = analysis.get("readabilityLevel", "Unknown")
@@ -613,6 +707,8 @@ def format_report(
         report_data["socialTags"] = social_tags
     if schema_data:
         report_data["schema"] = schema_data
+    if ahrefs_data:
+        report_data["ahrefs"] = ahrefs_data
 
     return report_data
 
