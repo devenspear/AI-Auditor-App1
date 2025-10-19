@@ -7,7 +7,7 @@ export default function NotFound() {
         <div className="text-6xl font-bold text-primary mb-4">404</div>
         <h1 className="text-3xl font-bold text-foreground mb-4">Report Not Found</h1>
         <p className="text-muted-foreground mb-8">
-          The report you're looking for doesn't exist or may have been deleted.
+          The report you&apos;re looking for doesn&apos;t exist or may have been deleted.
         </p>
         <Link
           href="/"

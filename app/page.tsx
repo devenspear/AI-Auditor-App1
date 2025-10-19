@@ -92,7 +92,7 @@ export default function AIAuditor() {
                 callbacks: {
                   title: function (tooltipItems) {
                     const item = tooltipItems[0];
-                    let label = item.chart.data.labels?.[item.dataIndex];
+                    const label = item.chart.data.labels?.[item.dataIndex];
                     if (Array.isArray(label)) {
                       return label.join(' ');
                     } else {

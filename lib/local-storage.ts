@@ -33,7 +33,7 @@ export async function saveSubmission(
     try {
       const data = await fs.readFile(SUBMISSIONS_FILE, 'utf-8');
       submissions = JSON.parse(data);
-    } catch (error) {
+    } catch {
       // File doesn't exist yet, start with empty array
       console.log('Creating new submissions file');
     }

@@ -540,7 +540,7 @@ export default async function ReportPage({ searchParams }: PageProps) {
             Ready to Optimize Your Website?
           </h2>
           <p className="text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Let's discuss how to implement these recommendations and improve your AI discoverability.
+            Let&apos;s discuss how to implement these recommendations and improve your AI discoverability.
           </p>
           <Link
             href="/"
