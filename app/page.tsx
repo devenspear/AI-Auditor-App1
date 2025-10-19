@@ -189,7 +189,7 @@ export default function Home() {
             <input
               value={url}
               onChange={(event) => setUrl(event.target.value)}
-              placeholder="https://example.com"
+              placeholder="example.com"
               className="w-full rounded-xl border border-input bg-card px-4 py-3 text-base shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
               type="text"
               required
@@ -199,7 +199,7 @@ export default function Home() {
             </Button>
           </form>
           <p className="mt-4 text-sm text-muted-foreground">
-            We run a multi-step audit: SSL security, Schema markup, social tags, PageSpeed performance, and dual-AI brand assessment powered by GPT-4o + Claude 3.5 Sonnet.
+            Just enter a domain name (e.g., anthropic.com) — we'll handle the rest. Multi-step audit includes: SSL security, Schema markup, social tags, PageSpeed performance, and dual-AI brand assessment powered by GPT-4o + Claude 3.5 Sonnet.
           </p>
 
           {status === "loading" && <LoadingState />}

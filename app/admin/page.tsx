@@ -43,6 +43,12 @@ export default function AdminDashboard() {
       return;
     }
 
+    // Auto-prepend https:// if no protocol specified (URL normalization)
+    let formattedUrl = url.trim();
+    if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
+      formattedUrl = 'https://' + formattedUrl;
+    }
+
     setLoading(true);
     setError(null);
     setResult(null);
@@ -54,7 +60,7 @@ export default function AdminDashboard() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          url: url.trim(),
+          url: formattedUrl,
           debug: true,
         }),
       });
@@ -124,7 +130,7 @@ export default function AdminDashboard() {
               type="url"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              placeholder="Enter website URL (e.g., https://example.com)"
+              placeholder="example.com"
               className="flex-1 rounded-lg border border-border bg-background px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
               disabled={loading}
             />
