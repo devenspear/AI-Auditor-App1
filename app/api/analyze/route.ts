@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
 import { scrapeWebsite } from "@/lib/web-scraper";
-import type { SSLGrade, AIAnalysis, DualAIAnalysis, BrandPerception, BrandAnalysis, AIAgentRecommendation } from "@/lib/report-types";
+import { saveSubmission } from "@/lib/local-storage";
+import type { SSLGrade, AIAnalysis, DualAIAnalysis, BrandPerception, BrandAnalysis, AIAgentRecommendation, SubmissionData, AnalysisReport } from "@/lib/report-types";
 
 interface PageSpeedData {
   lighthouseResult?: {
@@ -606,6 +607,7 @@ export async function POST(request: Request) {
     const json = await request.json();
     const url = typeof json?.url === "string" ? json.url.trim() : "";
     const debug = json?.debug === true;
+    const submissionData: SubmissionData | undefined = json?.submissionData;
 
     diagnostics[diagnostics.length - 1].status = 'success';
     diagnostics[diagnostics.length - 1].duration = Date.now() - diagnostics[diagnostics.length - 1].timestamp;
@@ -951,19 +953,38 @@ export async function POST(request: Request) {
 
     const totalDuration = Date.now() - startTime;
 
-    const response = {
+    // Calculate overall score
+    const overallScore = Math.round(
+      ((dualAI?.openai.scores?.brandVoice || 50) +
+        (dualAI?.openai.scores?.geoReadiness || 50) +
+        (dualAI?.openai.scores?.technicalHealth || 50)) / 3
+    );
+
+    // Calculate grade based on overall score
+    const calculateGrade = (score: number): string => {
+      if (score >= 90) return 'A+';
+      if (score >= 85) return 'A';
+      if (score >= 80) return 'A-';
+      if (score >= 75) return 'B+';
+      if (score >= 70) return 'B';
+      if (score >= 65) return 'B-';
+      if (score >= 60) return 'C+';
+      if (score >= 55) return 'C';
+      if (score >= 50) return 'C-';
+      if (score >= 45) return 'D+';
+      if (score >= 40) return 'D';
+      return 'F';
+    };
+
+    const response: AnalysisReport = {
       success: true,
       url,
       analyzedAt: new Date().toISOString(),
       // Combine data from all sources
       summary: dualAI?.consensus.recommendedActions[0] || "Analysis complete",
       score: {
-        overall: Math.round(
-          ((dualAI?.openai.scores?.brandVoice || 50) +
-            (dualAI?.openai.scores?.geoReadiness || 50) +
-            (dualAI?.openai.scores?.technicalHealth || 50)) / 3
-        ),
-        grade: "B+", // Calculate based on overall score
+        overall: overallScore,
+        grade: calculateGrade(overallScore),
         brandVoice: dualAI?.openai.scores?.brandVoice || 50,
         geoReadiness: dualAI?.openai.scores?.geoReadiness || 50,
         technicalHealth: dualAI?.openai.scores?.technicalHealth || 50,
@@ -1008,6 +1029,8 @@ export async function POST(request: Request) {
       socialTags: scraped.socialTags || undefined,
       dualAI: dualAI || undefined,
       brandAnalysis: brandAnalysis || undefined,
+      // Include submission data if provided
+      submissionData: submissionData || undefined,
       // Diagnostics (only in debug mode)
       ...(debug && {
         diagnostics: {
@@ -1022,6 +1045,18 @@ export async function POST(request: Request) {
         },
       }),
     };
+
+    // Save submission to local storage if submission data provided
+    if (submissionData) {
+      try {
+        console.log('Saving submission to local storage...');
+        await saveSubmission(submissionData, response);
+        console.log('Submission saved successfully');
+      } catch (saveError) {
+        console.error('Failed to save submission:', saveError);
+        // Don't fail the request if save fails, just log the error
+      }
+    }
 
     return NextResponse.json(response);
   } catch (error) {

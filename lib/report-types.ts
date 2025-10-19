@@ -161,6 +161,33 @@ export interface BrandAnalysis {
   overallBrandClarityScore: number; // 0-100
 }
 
+export interface SubmissionData {
+  // Contact Information
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+
+  // Company Information
+  companyName: string;
+  companyUrl: string;
+  industry?: string;
+  companySize?: string;
+  jobTitle?: string;
+
+  // Business Context (Optional)
+  productDescription?: string;
+  challenges?: string;
+  competitors?: string;
+  marketingGoals?: string;
+  timeline?: string;
+  additionalInfo?: string;
+
+  // Metadata
+  submittedAt: string;
+  submissionId: string;
+}
+
 export interface AnalysisReport {
   url: string;
   analyzedAt: string;
@@ -179,10 +206,12 @@ export interface AnalysisReport {
   ahrefs?: AhrefsMetrics;
   dualAI?: DualAIAnalysis;
   brandAnalysis?: BrandAnalysis;
+  submissionData?: SubmissionData;
 }
 
 export interface AnalysisRequestBody {
   url: string;
+  submissionData?: SubmissionData;
 }
 
 export interface ErrorResponse {
