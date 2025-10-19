@@ -894,7 +894,7 @@ export async function POST(request: Request) {
       });
 
       try {
-        const [openBrandResult, claudeBrandResult, _] = await Promise.allSettled([
+        const [openBrandResult, claudeBrandResult] = await Promise.allSettled([
           analyzeBrandWithOpenAI(url, scraped, openai),
           analyzeBrandWithClaude(url, scraped, anthropic),
           // Wait a small delay to not overwhelm APIs

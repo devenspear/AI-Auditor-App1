@@ -11,6 +11,10 @@ interface BrandAnalysisSectionProps {
 
 export function BrandAnalysisSection({ report }: BrandAnalysisSectionProps) {
   const { brandAnalysis } = report;
+
+  // Call hooks before any conditional returns
+  const brandClarityScore = useCountUp(brandAnalysis?.overallBrandClarityScore || 0, 2000, 300);
+
   if (!brandAnalysis) return null;
 
   const { openaiPerception, claudePerception } = brandAnalysis;
@@ -23,8 +27,6 @@ export function BrandAnalysisSection({ report }: BrandAnalysisSectionProps) {
   const avgTargetAudience = Math.round(
     (openaiPerception.targetAudienceClarity + claudePerception.targetAudienceClarity) / 2
   );
-
-  const brandClarityScore = useCountUp(brandAnalysis.overallBrandClarityScore, 2000, 300);
 
   const getPriorityColor = (priority: AIAgentRecommendation["priority"]) => {
     switch (priority) {
