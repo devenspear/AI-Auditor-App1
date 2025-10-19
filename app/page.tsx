@@ -671,7 +671,7 @@ export default function AIAuditor() {
 
         <footer className="text-center mt-16 py-8 border-t border-slate-200">
           <p className="text-slate-500 mt-2 text-sm">Ready to lead the AI revolution? Let&apos;s build the future of marketing, together.</p>
-          <p className="mt-4 text-xs text-slate-400">v1.3.0</p>
+          <p className="mt-4 text-xs text-slate-400">v1.4.0</p>
         </footer>
       </div>
       </div>
