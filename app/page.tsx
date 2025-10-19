@@ -175,6 +175,18 @@ export default function AIAuditor() {
         throw new Error('Analysis failed');
       }
 
+      // Get the full report data
+      const reportData = await response.json();
+
+      // Store report in sessionStorage for immediate access (works on Vercel)
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem(`report_${submissionId}`, JSON.stringify({
+          submissionData,
+          analysisReport: reportData,
+          createdAt: new Date().toISOString(),
+        }));
+      }
+
       // Navigate to report page with submission ID
       router.push(`/report?id=${submissionId}`);
     } catch (error) {

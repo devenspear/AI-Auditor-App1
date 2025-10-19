@@ -1,16 +1,72 @@
-import { getSubmission } from "@/lib/local-storage";
-import { notFound } from "next/navigation";
-import Link from "next/link";
+"use client";
 
-interface PageProps {
-  searchParams: Promise<{ id?: string }>;
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import Link from "next/link";
+import type { SubmissionData, AnalysisReport } from "@/lib/report-types";
+
+interface StoredSubmission {
+  submissionData: SubmissionData;
+  analysisReport: AnalysisReport;
+  createdAt: string;
 }
 
-export default async function ReportPage({ searchParams }: PageProps) {
-  const params = await searchParams;
-  const submissionId = params.id;
+export default function ReportPage() {
+  const searchParams = useSearchParams();
+  const submissionId = searchParams.get('id');
+  const [submission, setSubmission] = useState<StoredSubmission | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  if (!submissionId) {
+  useEffect(() => {
+    if (!submissionId) {
+      setError('no-id');
+      setLoading(false);
+      return;
+    }
+
+    // Try to load from sessionStorage first (for production/Vercel)
+    const sessionData = sessionStorage.getItem(`report_${submissionId}`);
+    if (sessionData) {
+      try {
+        const data = JSON.parse(sessionData);
+        setSubmission(data);
+        setLoading(false);
+        return;
+      } catch (err) {
+        console.error('Failed to parse session data:', err);
+      }
+    }
+
+    // Fall back to API call for server-side data (for local development with file storage)
+    fetch(`/api/submission?id=${submissionId}`)
+      .then(res => {
+        if (!res.ok) throw new Error('Submission not found');
+        return res.json();
+      })
+      .then(data => {
+        setSubmission(data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error('Failed to load submission:', err);
+        setError('not-found');
+        setLoading(false);
+      });
+  }, [submissionId]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 flex items-center justify-center p-8">
+        <div className="text-center">
+          <div className="animate-spin h-12 w-12 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading report...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error === 'no-id') {
     return (
       <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 flex items-center justify-center p-8">
         <div className="max-w-md text-center">
@@ -29,10 +85,24 @@ export default async function ReportPage({ searchParams }: PageProps) {
     );
   }
 
-  const submission = await getSubmission(submissionId);
-
-  if (!submission) {
-    notFound();
+  if (error === 'not-found' || !submission) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 flex items-center justify-center p-8">
+        <div className="max-w-md text-center">
+          <div className="text-6xl font-bold text-primary mb-4">404</div>
+          <h1 className="text-3xl font-bold text-foreground mb-4">Report Not Found</h1>
+          <p className="text-muted-foreground mb-8">
+            The report you&apos;re looking for doesn&apos;t exist or may have been deleted.
+          </p>
+          <Link
+            href="/"
+            className="inline-block rounded-lg bg-primary px-6 py-3 font-medium text-primary-foreground hover:bg-primary/90 transition"
+          >
+            Back to Home
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   const { submissionData, analysisReport } = submission;
