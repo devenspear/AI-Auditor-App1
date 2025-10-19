@@ -16,6 +16,19 @@ interface PageSpeedData {
   [key: string]: unknown;
 }
 
+// Helper to extract only essential PageSpeed data for AI analysis
+function extractEssentialPageSpeedData(data: PageSpeedData) {
+  const categories = data.lighthouseResult?.categories;
+  return {
+    scores: {
+      performance: categories?.performance?.score ? Math.round(categories.performance.score * 100) : 0,
+      accessibility: categories?.accessibility?.score ? Math.round(categories.accessibility.score * 100) : 0,
+      bestPractices: categories?.["best-practices"]?.score ? Math.round(categories["best-practices"].score * 100) : 0,
+      seo: categories?.seo?.score ? Math.round(categories.seo.score * 100) : 0,
+    }
+  };
+}
+
 function isValidHttpsUrl(value: string): boolean {
   try {
     const parsed = new URL(value);
@@ -69,12 +82,15 @@ async function analyzeWithOpenAI(
   const startTime = Date.now();
   console.log('analyzeWithOpenAI: Starting analysis for URL:', url);
 
+  // Extract only essential PageSpeed data to reduce token count
+  const essentialPageSpeed = extractEssentialPageSpeedData(pageSpeedData);
+
   const prompt = `You are an expert web marketing and UX auditor. Analyze the following website data and provide actionable recommendations.
 
 Website URL: ${url}
 
-PageSpeed Insights Data:
-${JSON.stringify(pageSpeedData, null, 2)}
+PageSpeed Scores:
+${JSON.stringify(essentialPageSpeed, null, 2)}
 
 Schema.org Data:
 ${JSON.stringify(scrapedData.schema, null, 2)}
@@ -162,12 +178,15 @@ async function analyzeWithClaude(
   const startTime = Date.now();
   console.log('analyzeWithClaude: Starting analysis for URL:', url);
 
+  // Extract only essential PageSpeed data to reduce token count
+  const essentialPageSpeed = extractEssentialPageSpeedData(pageSpeedData);
+
   const prompt = `You are an expert web marketing and UX auditor specializing in AI-native optimization. Analyze the following website data and provide actionable recommendations.
 
 Website URL: ${url}
 
-PageSpeed Insights Data:
-${JSON.stringify(pageSpeedData, null, 2)}
+PageSpeed Scores:
+${JSON.stringify(essentialPageSpeed, null, 2)}
 
 Schema.org Structured Data:
 ${JSON.stringify(scrapedData.schema, null, 2)}
@@ -203,16 +222,42 @@ Format your response as a structured JSON with the following schema:
 
   console.log('analyzeWithClaude: Calling Anthropic API...');
 
-  const message = await anthropic.messages.create({
-    model: "claude-3-5-sonnet-20241022",
-    max_tokens: 4096,
-    messages: [
-      {
-        role: "user",
-        content: prompt,
-      },
-    ],
-  });
+  // Add retry logic for rate limits
+  let retries = 0;
+  const maxRetries = 2;
+  let message;
+
+  while (retries <= maxRetries) {
+    try {
+      message = await anthropic.messages.create({
+        model: "claude-3-5-sonnet-20241022",
+        max_tokens: 4096,
+        messages: [
+          {
+            role: "user",
+            content: prompt,
+          },
+        ],
+      });
+      break; // Success, exit retry loop
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+
+      // Check if it's a rate limit error
+      if (errorMessage.includes('rate_limit') && retries < maxRetries) {
+        retries++;
+        const waitTime = Math.pow(2, retries) * 1000; // Exponential backoff: 2s, 4s
+        console.log(`Rate limit hit, retrying in ${waitTime}ms (attempt ${retries}/${maxRetries})...`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+      } else {
+        throw error; // Re-throw if not rate limit or max retries reached
+      }
+    }
+  }
+
+  if (!message) {
+    throw new Error('Failed to get Claude response after retries');
+  }
 
   console.log('analyzeWithClaude: API call successful');
   const processingTime = Date.now() - startTime;

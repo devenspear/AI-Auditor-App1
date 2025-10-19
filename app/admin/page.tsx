@@ -349,7 +349,7 @@ export default function AdminDashboard() {
 
         {/* Footer */}
         <div className="mt-8 text-center text-sm text-muted-foreground">
-          <p>Admin Dashboard v1.2.0 • Diagnostics Mode Enabled</p>
+          <p>Admin Dashboard v1.2.1 • Diagnostics Mode Enabled</p>
         </div>
       </div>
     </div>
