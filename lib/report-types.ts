@@ -189,6 +189,7 @@ export interface SubmissionData {
 }
 
 export interface AnalysisReport {
+  success: boolean;
   url: string;
   analyzedAt: string;
   summary: string;
