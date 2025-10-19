@@ -285,7 +285,7 @@ export default function AdminDashboard() {
                 </div>
 
                 <div className="rounded-lg border border-border bg-background p-4">
-                  <h4 className="font-semibold text-primary">OpenAI GPT-4o</h4>
+                  <h4 className="font-semibold text-primary">Primary AI Agent</h4>
                   <p className="mt-2 text-sm text-muted-foreground">
                     Provides: Marketing analysis, UX recommendations, brand voice assessment
                   </p>
@@ -298,7 +298,7 @@ export default function AdminDashboard() {
                 </div>
 
                 <div className="rounded-lg border border-border bg-background p-4">
-                  <h4 className="font-semibold text-primary">Anthropic Claude 3.5 Sonnet</h4>
+                  <h4 className="font-semibold text-primary">Secondary AI Agent</h4>
                   <p className="mt-2 text-sm text-muted-foreground">
                     Provides: GEO analysis, AI readiness assessment, structured data insights
                   </p>
@@ -326,8 +326,8 @@ export default function AdminDashboard() {
                 <div className="ml-8">• SSL Labs API</div>
                 <div className="ml-4">↓</div>
                 <div>4. Parallel AI Analysis:</div>
-                <div className="ml-8">• OpenAI GPT-4o → Marketing & UX insights</div>
-                <div className="ml-8">• Anthropic Claude → GEO & AI readiness</div>
+                <div className="ml-8">• Primary AI Agent → Marketing & UX insights</div>
+                <div className="ml-8">• Secondary AI Agent → GEO & AI readiness</div>
                 <div className="ml-4">↓</div>
                 <div>5. Create Consensus Analysis</div>
                 <div className="ml-8">• Find agreed insights</div>
@@ -355,7 +355,7 @@ export default function AdminDashboard() {
 
         {/* Footer */}
         <div className="mt-8 text-center text-sm text-muted-foreground">
-          <p>Admin Dashboard v1.2.1 • Diagnostics Mode Enabled</p>
+          <p>Admin Dashboard v1.2.2 • Diagnostics Mode Enabled</p>
         </div>
       </div>
     </div>

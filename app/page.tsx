@@ -199,7 +199,7 @@ export default function Home() {
             </Button>
           </form>
           <p className="mt-4 text-sm text-muted-foreground">
-            Just enter a domain name (e.g., anthropic.com) — we'll handle the rest. Multi-step audit includes: SSL security, Schema markup, social tags, PageSpeed performance, and dual-AI brand assessment powered by GPT-4o + Claude 3.5 Sonnet.
+            Just enter a domain name (e.g., anthropic.com) — we'll handle the rest. Multi-step audit includes: SSL security, Schema markup, social tags, PageSpeed performance, and dual-AI brand assessment powered by agentic AI.
           </p>
 
           {status === "loading" && <LoadingState />}
@@ -239,7 +239,7 @@ export default function Home() {
         </div>
       </main>
       <footer className="py-6 text-center text-xs text-muted-foreground">
-        <p>v1.2.1</p>
+        <p>v1.2.2</p>
       </footer>
     </div>
   );
@@ -271,7 +271,7 @@ function LoadingState() {
         <div>
           <p className="text-lg font-semibold">Running full-stack analysis…</p>
           <p className="text-sm text-muted-foreground">
-            Checking SSL, scraping Schema & social tags, fetching PageSpeed Insights, and running dual-AI analysis with GPT-4o + Claude 3.5 Sonnet for validated insights.
+            Checking SSL, scraping Schema & social tags, fetching PageSpeed Insights, and running dual-AI analysis with agentic AI for validated insights.
           </p>
         </div>
       </div>
@@ -563,7 +563,7 @@ function ContentSection({ report }: { report: AnalysisReport }) {
         <div>
           <h3 className="text-xl font-semibold">Themes AI Associates with You</h3>
           <p className="mt-2 text-sm text-muted-foreground">
-            These represent the top topics GPT-4o identified across the scraped body
+            These represent the top topics our AI agents identified across the scraped body
             content. Strengthen alignment between these themes and your commercial
             intent.
           </p>
@@ -612,7 +612,7 @@ function ActionPlanSection({ report }: { report: AnalysisReport }) {
     <section className="rounded-2xl border border-border bg-card p-8 shadow-sm">
       <h3 className="text-xl font-semibold">Top Priorities for the Next 90 Days</h3>
       <p className="mt-2 text-sm text-muted-foreground">
-        GPT-4o consolidates every signal into a focused action plan, scored by impact
+        Our AI agents consolidate every signal into a focused action plan, scored by impact
         and effort so your team knows where to move first.
       </p>
       <div className="mt-6 space-y-4">
@@ -880,7 +880,7 @@ function DualAISection({ report }: { report: AnalysisReport }) {
             Dual-AI Consensus Analysis
           </h3>
           <p className="mt-2 text-sm text-muted-foreground">
-            Powered by GPT-4o + Claude 3.5 Sonnet for comprehensive, validated insights
+            Powered by dual agentic AI for comprehensive, validated insights
           </p>
         </div>
         <span className={`rounded-full px-4 py-2 text-xs font-bold uppercase tracking-wide ${confidenceColor}`}>
@@ -891,28 +891,28 @@ function DualAISection({ report }: { report: AnalysisReport }) {
       {/* Processing Time */}
       <div className="mt-6 grid grid-cols-2 gap-4">
         <div className="rounded-lg border border-border bg-background p-4">
-          <p className="text-xs text-muted-foreground">GPT-4o Processing Time</p>
+          <p className="text-xs text-muted-foreground">Primary Agent Processing Time</p>
           <p className="mt-1 text-2xl font-bold text-primary">{(dualAI.openai.processingTime / 1000).toFixed(2)}s</p>
         </div>
         <div className="rounded-lg border border-border bg-background p-4">
-          <p className="text-xs text-muted-foreground">Claude Processing Time</p>
+          <p className="text-xs text-muted-foreground">Secondary Agent Processing Time</p>
           <p className="mt-1 text-2xl font-bold text-primary">{(dualAI.claude.processingTime / 1000).toFixed(2)}s</p>
         </div>
       </div>
 
       {/* Agreed Insights */}
       {dualAI.consensus.agreedInsights.length > 0 && (
-        <div className="mt-6 rounded-xl border border-green-200 bg-green-50 p-6">
-          <h4 className="text-sm font-semibold uppercase tracking-wide text-green-800 flex items-center gap-2">
+        <div className="mt-6 rounded-xl border border-border bg-gradient-to-br from-muted/50 to-muted/30 p-6">
+          <h4 className="text-sm font-semibold uppercase tracking-wide text-foreground flex items-center gap-2">
             <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            Agreed Insights (Both AIs Concur)
+            Agreed Insights (Both Agents Concur)
           </h4>
           <ul className="mt-4 space-y-2">
             {dualAI.consensus.agreedInsights.map((insight, idx) => (
-              <li key={idx} className="flex gap-3 text-sm text-green-900">
-                <span className="mt-0.5 flex-shrink-0 size-1.5 rounded-full bg-green-600" />
+              <li key={idx} className="flex gap-3 text-sm text-foreground/90">
+                <span className="mt-0.5 flex-shrink-0 size-1.5 rounded-full bg-foreground/60" />
                 <span>{insight}</span>
               </li>
             ))}
@@ -927,9 +927,9 @@ function DualAISection({ report }: { report: AnalysisReport }) {
             <svg className="size-5 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
             </svg>
-            GPT-4o Unique Insights
+            Primary Agent Unique Insights
           </h4>
-          <p className="mt-2 text-xs text-muted-foreground">Insights only GPT-4o identified</p>
+          <p className="mt-2 text-xs text-muted-foreground">Insights only the primary agent identified</p>
           <ul className="mt-4 space-y-2">
             {dualAI.openai.keyInsights.slice(0, 3).map((insight, idx) => (
               <li key={idx} className="text-sm text-foreground/90">
@@ -944,9 +944,9 @@ function DualAISection({ report }: { report: AnalysisReport }) {
             <svg className="size-5 text-purple-600" fill="currentColor" viewBox="0 0 24 24">
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
             </svg>
-            Claude Unique Insights
+            Secondary Agent Unique Insights
           </h4>
-          <p className="mt-2 text-xs text-muted-foreground">Insights only Claude identified</p>
+          <p className="mt-2 text-xs text-muted-foreground">Insights only the secondary agent identified</p>
           <ul className="mt-4 space-y-2">
             {dualAI.claude.keyInsights.slice(0, 3).map((insight, idx) => (
               <li key={idx} className="text-sm text-foreground/90">
