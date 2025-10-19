@@ -199,7 +199,7 @@ export default function Home() {
             </Button>
           </form>
           <p className="mt-4 text-sm text-muted-foreground">
-            Just enter a domain name (e.g., anthropic.com) — we'll handle the rest. Multi-step audit includes: SSL security, Schema markup, social tags, PageSpeed performance, and dual-AI brand assessment powered by agentic AI.
+            Just enter a domain name (e.g., anthropic.com) — we&apos;ll handle the rest. Multi-step audit includes: SSL security, Schema markup, social tags, PageSpeed performance, and dual-AI brand assessment powered by agentic AI.
           </p>
 
           {status === "loading" && <LoadingState />}
