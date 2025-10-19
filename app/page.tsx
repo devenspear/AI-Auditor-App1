@@ -123,6 +123,13 @@ export default function AIAuditor() {
     // Generate unique submission ID
     const submissionId = `sub_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
+    // Extract and normalize company URL
+    let companyUrl = (formData.get('companyUrl') as string).trim();
+    // Auto-prepend https:// if no protocol specified
+    if (!companyUrl.startsWith('http://') && !companyUrl.startsWith('https://')) {
+      companyUrl = 'https://' + companyUrl;
+    }
+
     // Extract form data
     const submissionData: SubmissionData = {
       // Contact Information
@@ -133,7 +140,7 @@ export default function AIAuditor() {
 
       // Company Information
       companyName: formData.get('companyName') as string,
-      companyUrl: formData.get('companyUrl') as string,
+      companyUrl: companyUrl,
       industry: formData.get('industry') as string || undefined,
       companySize: formData.get('companySize') as string || undefined,
       jobTitle: formData.get('jobTitle') as string || undefined,
@@ -178,8 +185,41 @@ export default function AIAuditor() {
   };
 
   return (
-    <div className="bg-slate-50 text-slate-700">
-      <div className="container mx-auto p-4 md:p-8">
+    <>
+      {/* Loading Modal */}
+      {isSubmitting && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 md:p-12 max-w-md w-full text-center">
+            <div className="mb-6">
+              <svg className="animate-spin h-16 w-16 text-blue-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            </div>
+            <h3 className="text-2xl font-bold text-slate-800 mb-3">Analyzing Your Website...</h3>
+            <p className="text-slate-600 mb-4">
+              Our dual-AI system is analyzing your website&apos;s brand clarity, GEO readiness, and technical health.
+            </p>
+            <div className="flex flex-col gap-2 text-sm text-slate-500">
+              <div className="flex items-center justify-center gap-2">
+                <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></div>
+                <span>Scanning technical SEO</span>
+              </div>
+              <div className="flex items-center justify-center gap-2">
+                <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
+                <span>Analyzing brand perception</span>
+              </div>
+              <div className="flex items-center justify-center gap-2">
+                <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
+                <span>Generating recommendations</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="bg-slate-50 text-slate-700">
+        <div className="container mx-auto p-4 md:p-8">
         <header className="text-center my-8 md:my-12">
           <h1 className="text-4xl md:text-6xl font-black bg-gradient-to-r from-blue-400 via-blue-500 to-slate-600 bg-clip-text text-transparent pb-1">The AI Revolution in Marketing</h1>
           <p className="mt-4 text-lg md:text-xl max-w-3xl mx-auto text-slate-600">A new era is dawning. Brands are no longer defined by what they say, but by how AI understands them. This is the playbook for navigating the next five years.</p>
@@ -423,12 +463,12 @@ export default function AIAuditor() {
                       Company Website <span className="text-red-600">*</span>
                     </label>
                     <input
-                      type="url"
+                      type="text"
                       id="companyUrl"
                       name="companyUrl"
                       required
                       className="w-full px-4 py-3 rounded-lg bg-slate-50 border border-slate-300 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-200 text-slate-800 placeholder-slate-400 transition-all duration-200"
-                      placeholder="https://www.example.com"
+                      placeholder="example.com or https://www.example.com"
                     />
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -622,6 +662,7 @@ export default function AIAuditor() {
           <p className="mt-4 text-xs text-slate-400">v1.3.0</p>
         </footer>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
