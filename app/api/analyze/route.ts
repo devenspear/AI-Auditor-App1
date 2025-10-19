@@ -280,10 +280,33 @@ function createDualAIConsensus(openai: AIAnalysis, claude: AIAnalysis): DualAIAn
   };
 }
 
+// Diagnostic logging helper
+interface DiagnosticLog {
+  step: string;
+  status: 'started' | 'success' | 'error' | 'skipped';
+  timestamp: number;
+  duration?: number;
+  error?: string;
+  data?: unknown;
+}
+
 export async function POST(request: Request) {
+  const diagnostics: DiagnosticLog[] = [];
+  const startTime = Date.now();
+
   try {
+    diagnostics.push({
+      step: 'Parse request',
+      status: 'started',
+      timestamp: Date.now(),
+    });
+
     const json = await request.json();
     const url = typeof json?.url === "string" ? json.url.trim() : "";
+    const debug = json?.debug === true;
+
+    diagnostics[diagnostics.length - 1].status = 'success';
+    diagnostics[diagnostics.length - 1].duration = Date.now() - diagnostics[diagnostics.length - 1].timestamp;
 
     if (!isValidHttpsUrl(url)) {
       return NextResponse.json(
@@ -293,16 +316,32 @@ export async function POST(request: Request) {
     }
 
     // Check for required API keys
+    diagnostics.push({
+      step: 'Check API keys',
+      status: 'started',
+      timestamp: Date.now(),
+    });
+
     const openaiKey = process.env.OPENAI_API_KEY;
     const anthropicKey = process.env.ANTHROPIC_API_KEY;
     const pageSpeedKey = process.env.PAGESPEED_API_KEY;
 
     if (!openaiKey) {
+      diagnostics[diagnostics.length - 1].status = 'error';
+      diagnostics[diagnostics.length - 1].error = 'OpenAI API key not configured';
       return NextResponse.json(
-        { message: "Server configuration error. OpenAI API key not configured." },
+        { message: "Server configuration error. OpenAI API key not configured.", diagnostics },
         { status: 500 },
       );
     }
+
+    diagnostics[diagnostics.length - 1].status = 'success';
+    diagnostics[diagnostics.length - 1].duration = Date.now() - diagnostics[diagnostics.length - 1].timestamp;
+    diagnostics[diagnostics.length - 1].data = {
+      hasOpenAI: !!openaiKey,
+      hasAnthropic: !!anthropicKey,
+      hasPageSpeed: !!pageSpeedKey,
+    };
 
     // Initialize AI clients
     console.log('Initializing AI clients...');
@@ -312,21 +351,46 @@ export async function POST(request: Request) {
 
     // Fetch all data in parallel for speed
     console.log('Fetching all data sources in parallel...');
+
+    diagnostics.push({
+      step: 'Fetch PageSpeed data',
+      status: 'started',
+      timestamp: Date.now(),
+    });
+    diagnostics.push({
+      step: 'Scrape website',
+      status: 'started',
+      timestamp: Date.now(),
+    });
+    diagnostics.push({
+      step: 'Check SSL',
+      status: 'started',
+      timestamp: Date.now(),
+    });
+
     const [pageSpeedData, scrapedData, sslData] = await Promise.allSettled([
       pageSpeedKey
         ? fetchPageSpeedData(url, pageSpeedKey).catch((err) => {
             console.warn('PageSpeed API failed:', err);
+            diagnostics.find(d => d.step === 'Fetch PageSpeed data')!.status = 'error';
+            diagnostics.find(d => d.step === 'Fetch PageSpeed data')!.error = err.message;
             return {};
           })
-        : Promise.resolve({}),
+        : (() => {
+            diagnostics.find(d => d.step === 'Fetch PageSpeed data')!.status = 'skipped';
+            diagnostics.find(d => d.step === 'Fetch PageSpeed data')!.error = 'No API key';
+            return Promise.resolve({});
+          })(),
       scrapeWebsite(url).catch((err) => {
         console.warn('Web scraping failed:', err);
+        diagnostics.find(d => d.step === 'Scrape website')!.status = 'error';
+        diagnostics.find(d => d.step === 'Scrape website')!.error = err.message;
         return {
           schema: {
             hasSchema: false,
             schemaTypes: [],
             count: 0,
-            recommendations: ['Unable to scrape website for schema analysis'],
+            recommendations: [`Unable to scrape website: ${err.message}`],
           },
           socialTags: {
             openGraph: {
@@ -346,11 +410,20 @@ export async function POST(request: Request) {
               tags: {},
             },
             overallScore: 0,
-            recommendations: ['Unable to scrape website for social tags analysis'],
+            recommendations: [`Unable to scrape website: ${err.message}`],
           },
         };
       }),
-      fetchSSLData(url),
+      fetchSSLData(url).catch((err) => {
+        console.warn('SSL check failed:', err);
+        diagnostics.find(d => d.step === 'Check SSL')!.status = 'error';
+        diagnostics.find(d => d.step === 'Check SSL')!.error = err.message;
+        return {
+          hasSSL: url.startsWith('https://'),
+          grade: 'Error',
+          error: err.message,
+        };
+      }),
     ]);
 
     const pageSpeed: PageSpeedData = pageSpeedData.status === 'fulfilled' ? pageSpeedData.value : {};
@@ -384,11 +457,51 @@ export async function POST(request: Request) {
     };
     const ssl = sslData.status === 'fulfilled' ? sslData.value : null;
 
+    // Update diagnostics for data fetching
+    if (pageSpeedData.status === 'fulfilled') {
+      const diag = diagnostics.find(d => d.step === 'Fetch PageSpeed data')!;
+      diag.status = 'success';
+      diag.duration = Date.now() - diag.timestamp;
+      diag.data = {
+        hasData: Object.keys(pageSpeed).length > 0,
+        score: pageSpeed.lighthouseResult?.categories?.performance?.score,
+      };
+    }
+    if (scrapedData.status === 'fulfilled') {
+      const diag = diagnostics.find(d => d.step === 'Scrape website')!;
+      diag.status = 'success';
+      diag.duration = Date.now() - diag.timestamp;
+      diag.data = {
+        schemaCount: scraped.schema.count,
+        socialScore: scraped.socialTags.overallScore,
+      };
+    }
+    if (sslData.status === 'fulfilled') {
+      const diag = diagnostics.find(d => d.step === 'Check SSL')!;
+      diag.status = 'success';
+      diag.duration = Date.now() - diag.timestamp;
+      diag.data = {
+        hasSSL: ssl?.hasSSL,
+        grade: ssl?.grade,
+      };
+    }
+
     console.log('All data sources fetched');
 
     // Run AI analyses in parallel if both are available
     console.log('Starting AI analyses...');
     let dualAI: DualAIAnalysis | undefined;
+
+    diagnostics.push({
+      step: 'Analyze with OpenAI',
+      status: 'started',
+      timestamp: Date.now(),
+    });
+    diagnostics.push({
+      step: 'Analyze with Claude',
+      status: 'started',
+      timestamp: Date.now(),
+    });
 
     if (anthropic) {
       // Run both AIs in parallel
@@ -396,6 +509,40 @@ export async function POST(request: Request) {
         analyzeWithOpenAI(url, pageSpeed, scraped, openai),
         analyzeWithClaude(url, pageSpeed, scraped, anthropic),
       ]);
+
+      // Update OpenAI diagnostics
+      if (openaiResult.status === 'fulfilled') {
+        const diag = diagnostics.find(d => d.step === 'Analyze with OpenAI')!;
+        diag.status = 'success';
+        diag.duration = Date.now() - diag.timestamp;
+        diag.data = {
+          processingTime: openaiResult.value.processingTime,
+          scores: openaiResult.value.scores,
+          insightCount: openaiResult.value.keyInsights.length,
+        };
+      } else {
+        const diag = diagnostics.find(d => d.step === 'Analyze with OpenAI')!;
+        diag.status = 'error';
+        diag.duration = Date.now() - diag.timestamp;
+        diag.error = openaiResult.reason?.message || 'Unknown error';
+      }
+
+      // Update Claude diagnostics
+      if (claudeResult.status === 'fulfilled') {
+        const diag = diagnostics.find(d => d.step === 'Analyze with Claude')!;
+        diag.status = 'success';
+        diag.duration = Date.now() - diag.timestamp;
+        diag.data = {
+          processingTime: claudeResult.value.processingTime,
+          scores: claudeResult.value.scores,
+          insightCount: claudeResult.value.keyInsights.length,
+        };
+      } else {
+        const diag = diagnostics.find(d => d.step === 'Analyze with Claude')!;
+        diag.status = 'error';
+        diag.duration = Date.now() - diag.timestamp;
+        diag.error = claudeResult.reason?.message || 'Unknown error';
+      }
 
       if (openaiResult.status === 'fulfilled' && claudeResult.status === 'fulfilled') {
         const consensus = createDualAIConsensus(openaiResult.value, claudeResult.value);
@@ -423,11 +570,16 @@ export async function POST(request: Request) {
           claude: claudeResult.status,
         });
       }
+    } else {
+      diagnostics.find(d => d.step === 'Analyze with Claude')!.status = 'skipped';
+      diagnostics.find(d => d.step === 'Analyze with Claude')!.error = 'No API key';
     }
 
     console.log('Analysis complete, preparing response...');
 
-    return NextResponse.json({
+    const totalDuration = Date.now() - startTime;
+
+    const response = {
       success: true,
       url,
       analyzedAt: new Date().toISOString(),
@@ -483,7 +635,22 @@ export async function POST(request: Request) {
       schema: scraped.schema || undefined,
       socialTags: scraped.socialTags || undefined,
       dualAI: dualAI || undefined,
-    });
+      // Diagnostics (only in debug mode)
+      ...(debug && {
+        diagnostics: {
+          totalDuration,
+          steps: diagnostics,
+          summary: {
+            totalSteps: diagnostics.length,
+            successful: diagnostics.filter(d => d.status === 'success').length,
+            failed: diagnostics.filter(d => d.status === 'error').length,
+            skipped: diagnostics.filter(d => d.status === 'skipped').length,
+          },
+        },
+      }),
+    };
+
+    return NextResponse.json(response);
   } catch (error) {
     console.error("Analysis request failed:", error);
 
@@ -491,6 +658,7 @@ export async function POST(request: Request) {
       {
         message: error instanceof Error ? error.message : "Analysis failed. Please try again.",
         details: error instanceof Error ? error.stack : undefined,
+        diagnostics,
       },
       { status: 500 },
     );

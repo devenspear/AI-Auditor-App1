@@ -1,0 +1,211 @@
+import { NextResponse } from "next/server";
+import OpenAI from "openai";
+
+interface PageSpeedData {
+  lighthouseResult?: {
+    categories?: {
+      performance?: { score: number };
+      accessibility?: { score: number };
+      "best-practices"?: { score: number };
+      seo?: { score: number };
+    };
+  };
+  [key: string]: unknown;
+}
+
+function isValidHttpsUrl(value: string): boolean {
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === "https:" || parsed.protocol === "http:";
+  } catch {
+    return false;
+  }
+}
+
+async function fetchPageSpeedData(url: string, apiKey: string): Promise<PageSpeedData> {
+  const endpoint = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(url)}&key=${apiKey}&strategy=mobile&category=performance&category=accessibility&category=best-practices&category=seo`;
+
+  const response = await fetch(endpoint);
+  if (!response.ok) {
+    throw new Error(`PageSpeed API error: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+async function analyzeWithOpenAI(url: string, pageSpeedData: PageSpeedData, openai: OpenAI) {
+  console.log('analyzeWithOpenAI: Starting analysis for URL:', url);
+
+  const prompt = `You are an expert web marketing and UX auditor. Analyze the following website and PageSpeed data, then provide actionable recommendations.
+
+Website URL: ${url}
+
+PageSpeed Insights Data:
+${JSON.stringify(pageSpeedData, null, 2)}
+
+Please provide a comprehensive audit covering:
+1. **Performance**: Load times, optimization opportunities
+2. **SEO**: Meta tags, structure, mobile-friendliness
+3. **Accessibility**: WCAG compliance, usability issues
+4. **User Experience**: Design, navigation, conversion optimization
+5. **Marketing**: Messaging clarity, calls-to-action, value proposition
+
+Format your response as a structured JSON with the following schema:
+{
+  "summary": "Brief overall assessment",
+  "scores": {
+    "performance": 0-100,
+    "seo": 0-100,
+    "accessibility": 0-100,
+    "ux": 0-100,
+    "marketing": 0-100
+  },
+  "recommendations": [
+    {
+      "category": "performance|seo|accessibility|ux|marketing",
+      "priority": "high|medium|low",
+      "issue": "Description of the issue",
+      "solution": "How to fix it",
+      "impact": "Expected improvement"
+    }
+  ]
+}`;
+
+  console.log('analyzeWithOpenAI: Calling OpenAI API...');
+  console.log('analyzeWithOpenAI: Model: gpt-4-turbo-preview');
+  console.log('analyzeWithOpenAI: Prompt length:', prompt.length);
+
+  const completion = await openai.chat.completions.create({
+    model: "gpt-4-turbo-preview",
+    messages: [
+      {
+        role: "system",
+        content: "You are an expert web marketing and UX auditor. Always respond with valid JSON only, no additional text.",
+      },
+      {
+        role: "user",
+        content: prompt,
+      },
+    ],
+    temperature: 0.7,
+    max_tokens: 4096,
+    response_format: { type: "json_object" },
+  });
+
+  console.log('analyzeWithOpenAI: API call successful, processing response...');
+  const content = completion.choices[0].message.content;
+
+  if (content) {
+    try {
+      return JSON.parse(content);
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError);
+      return { rawResponse: content };
+    }
+  }
+
+  throw new Error("No content in OpenAI response");
+}
+
+export async function POST(request: Request) {
+  try {
+    const json = await request.json();
+    const url = typeof json?.url === "string" ? json.url.trim() : "";
+
+    if (!isValidHttpsUrl(url)) {
+      return NextResponse.json(
+        { message: "Please provide a valid URL." },
+        { status: 400 },
+      );
+    }
+
+    // Check for required API keys
+    const openaiKey = process.env.OPENAI_API_KEY;
+    const pageSpeedKey = process.env.PAGESPEED_API_KEY;
+
+    if (!openaiKey || !pageSpeedKey) {
+      return NextResponse.json(
+        {
+          message: "Server configuration error. API keys not configured.",
+        },
+        { status: 500 },
+      );
+    }
+
+    // Initialize OpenAI client
+    console.log('Initializing OpenAI client...');
+    const openai = new OpenAI({
+      apiKey: openaiKey,
+    });
+    console.log('OpenAI client initialized successfully');
+
+    // Fetch PageSpeed data (optional - continue even if it fails)
+    console.log('Fetching PageSpeed data...');
+    let pageSpeedData: PageSpeedData = {};
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
+      pageSpeedData = await fetchPageSpeedData(url, pageSpeedKey);
+      clearTimeout(timeoutId);
+
+      console.log('PageSpeed data fetched successfully');
+      console.log('PageSpeed performance score:', pageSpeedData.lighthouseResult?.categories?.performance?.score);
+      console.log('PageSpeed full data sample:', JSON.stringify(pageSpeedData).substring(0, 500));
+    } catch (pageSpeedError) {
+      console.warn('PageSpeed API failed, continuing without it:', pageSpeedError instanceof Error ? pageSpeedError.message : String(pageSpeedError));
+      // Continue analysis without PageSpeed data
+    }
+
+    // Analyze with OpenAI
+    console.log('Starting OpenAI analysis...');
+    let analysis;
+    try {
+      analysis = await analyzeWithOpenAI(url, pageSpeedData, openai);
+      console.log('OpenAI analysis completed successfully');
+    } catch (openaiError) {
+      console.error('OpenAI API error details:', openaiError);
+      console.error('Error type:', openaiError instanceof Error ? openaiError.constructor.name : typeof openaiError);
+      console.error('Error message:', openaiError instanceof Error ? openaiError.message : String(openaiError));
+      console.error('Error stack:', openaiError instanceof Error ? openaiError.stack : 'No stack trace');
+      throw openaiError;
+    }
+
+    return NextResponse.json({
+      success: true,
+      url,
+      analysis,
+      pageSpeedData: {
+        performanceScore: (pageSpeedData.lighthouseResult?.categories?.performance?.score ?? 0) * 100,
+        accessibilityScore: (pageSpeedData.lighthouseResult?.categories?.accessibility?.score ?? 0) * 100,
+        bestPracticesScore: (pageSpeedData.lighthouseResult?.categories?.["best-practices"]?.score ?? 0) * 100,
+        seoScore: (pageSpeedData.lighthouseResult?.categories?.seo?.score ?? 0) * 100,
+      },
+    });
+  } catch (error) {
+    console.error("Analysis request failed:", error);
+
+    // Extract more detailed error information
+    let errorMessage = "Analysis failed. Please try again.";
+    let errorDetails = "";
+
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      // Check if it's an Anthropic API error with more details
+      if ('error' in error && typeof error.error === 'object' && error.error !== null) {
+        const apiError = error.error as { message?: string };
+        if (apiError.message) {
+          errorDetails = apiError.message;
+        }
+      }
+    }
+
+    return NextResponse.json(
+      {
+        message: errorMessage,
+        details: errorDetails || undefined,
+      },
+      { status: 500 },
+    );
+  }
+}
