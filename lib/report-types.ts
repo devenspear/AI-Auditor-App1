@@ -104,6 +104,31 @@ export interface AhrefsMetrics {
   error?: string;
 }
 
+export interface AIAnalysis {
+  provider: "openai" | "anthropic";
+  summary: string;
+  scores?: {
+    brandVoice?: number;
+    geoReadiness?: number;
+    technicalHealth?: number;
+  };
+  keyInsights: string[];
+  recommendations: string[];
+  processingTime: number;
+}
+
+export interface DualAIAnalysis {
+  openai: AIAnalysis;
+  claude: AIAnalysis;
+  consensus: {
+    agreedInsights: string[];
+    uniqueToOpenAI: string[];
+    uniqueToClaude: string[];
+    recommendedActions: string[];
+  };
+  confidence: "high" | "medium" | "low";
+}
+
 export interface AnalysisReport {
   url: string;
   analyzedAt: string;
@@ -120,6 +145,7 @@ export interface AnalysisReport {
   socialTags?: SocialTags;
   schema?: SchemaMarkup;
   ahrefs?: AhrefsMetrics;
+  dualAI?: DualAIAnalysis;
 }
 
 export interface AnalysisRequestBody {

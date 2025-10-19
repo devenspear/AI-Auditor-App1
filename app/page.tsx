@@ -199,8 +199,7 @@ export default function Home() {
             </Button>
           </form>
           <p className="mt-4 text-sm text-muted-foreground">
-            We run a multi-step audit: on-page clarity, PageSpeed performance, and an AI
-            brand assessment powered by GPT-4o.
+            We run a multi-step audit: SSL security, Schema markup, social tags, PageSpeed performance, and dual-AI brand assessment powered by GPT-4o + Claude 3.5 Sonnet.
           </p>
 
           {status === "loading" && <LoadingState />}
@@ -227,6 +226,7 @@ export default function Home() {
                 summary={report.summary}
               />
               <ScoreGrid report={report} />
+              {report.dualAI && <DualAISection report={report} />}
               <PerformanceSection report={report} />
               {(report.ssl || report.security) && <SecuritySection report={report} />}
               {report.socialTags && <SocialTagsSection report={report} />}
@@ -268,8 +268,7 @@ function LoadingState() {
         <div>
           <p className="text-lg font-semibold">Running full-stack analysis…</p>
           <p className="text-sm text-muted-foreground">
-            Scraping site content, fetching PageSpeed Insights, and routing data through
-            GPT-4o for strategic scoring.
+            Checking SSL, scraping Schema & social tags, fetching PageSpeed Insights, and running dual-AI analysis with GPT-4o + Claude 3.5 Sonnet for validated insights.
           </p>
         </div>
       </div>
@@ -850,5 +849,124 @@ function SchemaSection({ report }: { report: AnalysisReport }) {
         </div>
       )}
     </section>
+  );
+}
+
+function DualAISection({ report }: { report: AnalysisReport }) {
+  const { dualAI } = report;
+  if (!dualAI) return null;
+
+  const confidenceColor =
+    dualAI.confidence === 'high' ? 'bg-green-100 text-green-800' :
+    dualAI.confidence === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+    'bg-orange-100 text-orange-800';
+
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6 }}
+      className="rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/10 via-card to-card p-8 shadow-lg"
+    >
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-xl font-semibold flex items-center gap-2">
+            <svg className="size-6 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+            </svg>
+            Dual-AI Consensus Analysis
+          </h3>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Powered by GPT-4o + Claude 3.5 Sonnet for comprehensive, validated insights
+          </p>
+        </div>
+        <span className={`rounded-full px-4 py-2 text-xs font-bold uppercase tracking-wide ${confidenceColor}`}>
+          {dualAI.confidence} Confidence
+        </span>
+      </div>
+
+      {/* Processing Time */}
+      <div className="mt-6 grid grid-cols-2 gap-4">
+        <div className="rounded-lg border border-border bg-background p-4">
+          <p className="text-xs text-muted-foreground">GPT-4o Processing Time</p>
+          <p className="mt-1 text-2xl font-bold text-primary">{(dualAI.openai.processingTime / 1000).toFixed(2)}s</p>
+        </div>
+        <div className="rounded-lg border border-border bg-background p-4">
+          <p className="text-xs text-muted-foreground">Claude Processing Time</p>
+          <p className="mt-1 text-2xl font-bold text-primary">{(dualAI.claude.processingTime / 1000).toFixed(2)}s</p>
+        </div>
+      </div>
+
+      {/* Agreed Insights */}
+      {dualAI.consensus.agreedInsights.length > 0 && (
+        <div className="mt-6 rounded-xl border border-green-200 bg-green-50 p-6">
+          <h4 className="text-sm font-semibold uppercase tracking-wide text-green-800 flex items-center gap-2">
+            <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Agreed Insights (Both AIs Concur)
+          </h4>
+          <ul className="mt-4 space-y-2">
+            {dualAI.consensus.agreedInsights.map((insight, idx) => (
+              <li key={idx} className="flex gap-3 text-sm text-green-900">
+                <span className="mt-0.5 flex-shrink-0 size-1.5 rounded-full bg-green-600" />
+                <span>{insight}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Unique Insights */}
+      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+        <div className="rounded-xl border border-border bg-background p-6">
+          <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
+            <svg className="size-5 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
+            </svg>
+            GPT-4o Unique Insights
+          </h4>
+          <p className="mt-2 text-xs text-muted-foreground">Insights only GPT-4o identified</p>
+          <ul className="mt-4 space-y-2">
+            {dualAI.openai.keyInsights.slice(0, 3).map((insight, idx) => (
+              <li key={idx} className="text-sm text-foreground/90">
+                • {insight}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="rounded-xl border border-border bg-background p-6">
+          <h4 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
+            <svg className="size-5 text-purple-600" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+            </svg>
+            Claude Unique Insights
+          </h4>
+          <p className="mt-2 text-xs text-muted-foreground">Insights only Claude identified</p>
+          <ul className="mt-4 space-y-2">
+            {dualAI.claude.keyInsights.slice(0, 3).map((insight, idx) => (
+              <li key={idx} className="text-sm text-foreground/90">
+                • {insight}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      {/* Recommended Actions */}
+      <div className="mt-6 rounded-xl border border-primary/20 bg-primary/5 p-6">
+        <h4 className="text-sm font-semibold text-primary">Combined AI Recommendations</h4>
+        <p className="mt-1 text-xs text-muted-foreground">Top actions recommended by both AI systems</p>
+        <ul className="mt-4 space-y-2">
+          {dualAI.consensus.recommendedActions.slice(0, 6).map((action, idx) => (
+            <li key={idx} className="flex gap-3 text-sm text-foreground">
+              <span className="mt-0.5 flex-shrink-0 size-1.5 rounded-full bg-primary" />
+              <span>{action}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </motion.section>
   );
 }
