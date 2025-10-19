@@ -238,6 +238,9 @@ export default function Home() {
           )}
         </div>
       </main>
+      <footer className="py-6 text-center text-xs text-muted-foreground">
+        <p>v1.1.0</p>
+      </footer>
     </div>
   );
 }

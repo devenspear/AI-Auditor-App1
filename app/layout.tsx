@@ -14,8 +14,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Agency Template - Next.js + ShadCN + Framer Motion",
-  description: "A modern Next.js template with ShadCN UI, Framer Motion, and a complete design system. Built for Vercel.",
+  title: "Generative AI Auditor - Dual-AI Website Analysis",
+  description: "Comprehensive website audits powered by GPT-4o + Claude 3.5 Sonnet. Analyze SSL security, Schema markup, social media optimization, and AI readiness for GEO (Generative Engine Optimization).",
+  icons: {
+    icon: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({

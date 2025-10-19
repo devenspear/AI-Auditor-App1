@@ -272,16 +272,6 @@ function createDualAIConsensus(openai: AIAnalysis, claude: AIAnalysis): DualAIAn
     ...claude.recommendations.slice(0, 3),
   ];
 
-  // Determine confidence based on score agreement
-  const avgScoreDiff = Math.abs(
-    ((openai.scores?.brandVoice || 0) - (claude.scores?.brandVoice || 0)) +
-    ((openai.scores?.geoReadiness || 0) - (claude.scores?.geoReadiness || 0)) +
-    ((openai.scores?.technicalHealth || 0) - (claude.scores?.technicalHealth || 0))
-  ) / 3;
-
-  const confidence: "high" | "medium" | "low" =
-    avgScoreDiff < 10 ? "high" : avgScoreDiff < 20 ? "medium" : "low";
-
   return {
     agreedInsights,
     uniqueToOpenAI,
@@ -331,13 +321,67 @@ export async function POST(request: Request) {
         : Promise.resolve({}),
       scrapeWebsite(url).catch((err) => {
         console.warn('Web scraping failed:', err);
-        return { schema: null, socialTags: null };
+        return {
+          schema: {
+            hasSchema: false,
+            schemaTypes: [],
+            count: 0,
+            recommendations: ['Unable to scrape website for schema analysis'],
+          },
+          socialTags: {
+            openGraph: {
+              hasOGTitle: false,
+              hasOGDescription: false,
+              hasOGImage: false,
+              hasOGUrl: false,
+              score: 0,
+              tags: {},
+            },
+            twitterCard: {
+              hasCard: false,
+              hasTitle: false,
+              hasDescription: false,
+              hasImage: false,
+              score: 0,
+              tags: {},
+            },
+            overallScore: 0,
+            recommendations: ['Unable to scrape website for social tags analysis'],
+          },
+        };
       }),
       fetchSSLData(url),
     ]);
 
-    const pageSpeed = pageSpeedData.status === 'fulfilled' ? pageSpeedData.value : {};
-    const scraped = scrapedData.status === 'fulfilled' ? scrapedData.value : { schema: null, socialTags: null };
+    const pageSpeed: PageSpeedData = pageSpeedData.status === 'fulfilled' ? pageSpeedData.value : {};
+    const scraped = scrapedData.status === 'fulfilled' ? scrapedData.value : {
+      schema: {
+        hasSchema: false,
+        schemaTypes: [],
+        count: 0,
+        recommendations: [],
+      },
+      socialTags: {
+        openGraph: {
+          hasOGTitle: false,
+          hasOGDescription: false,
+          hasOGImage: false,
+          hasOGUrl: false,
+          score: 0,
+          tags: {},
+        },
+        twitterCard: {
+          hasCard: false,
+          hasTitle: false,
+          hasDescription: false,
+          hasImage: false,
+          score: 0,
+          tags: {},
+        },
+        overallScore: 0,
+        recommendations: [],
+      },
+    };
     const ssl = sslData.status === 'fulfilled' ? sslData.value : null;
 
     console.log('All data sources fetched');
