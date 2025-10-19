@@ -129,6 +129,38 @@ export interface DualAIAnalysis {
   confidence: "high" | "medium" | "low";
 }
 
+export interface BrandPerception {
+  brandName: string | null;
+  detectedBrandAttributes: string[];
+  brandVoiceCharacteristics: string[];
+  positioningClarity: number; // 0-100
+  differentiationScore: number; // 0-100
+  emotionalTone: string;
+  targetAudienceClarity: number; // 0-100
+}
+
+export interface AIAgentRecommendation {
+  agent: "ChatGPT" | "Claude" | "Gemini" | "Perplexity" | "General";
+  priority: "High" | "Medium" | "Low";
+  recommendation: string;
+  rationale: string;
+  implementation: string;
+}
+
+export interface BrandAnalysis {
+  openaiPerception: BrandPerception;
+  claudePerception: BrandPerception;
+  consensusBrandAttributes: string[];
+  brandStrengths: string[];
+  brandWeaknesses: string[];
+  competitivePositioning: string;
+  metadataRecommendations: string[];
+  contentRecommendations: string[];
+  designRecommendations: string[];
+  aiAgentOptimizations: AIAgentRecommendation[];
+  overallBrandClarityScore: number; // 0-100
+}
+
 export interface AnalysisReport {
   url: string;
   analyzedAt: string;
@@ -146,6 +178,7 @@ export interface AnalysisReport {
   schema?: SchemaMarkup;
   ahrefs?: AhrefsMetrics;
   dualAI?: DualAIAnalysis;
+  brandAnalysis?: BrandAnalysis;
 }
 
 export interface AnalysisRequestBody {

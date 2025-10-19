@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
 import { scrapeWebsite } from "@/lib/web-scraper";
-import type { SSLGrade, AIAnalysis, DualAIAnalysis } from "@/lib/report-types";
+import type { SSLGrade, AIAnalysis, DualAIAnalysis, BrandPerception, BrandAnalysis, AIAgentRecommendation } from "@/lib/report-types";
 
 interface PageSpeedData {
   lighthouseResult?: {
@@ -325,6 +325,263 @@ function createDualAIConsensus(openai: AIAnalysis, claude: AIAnalysis): DualAIAn
   };
 }
 
+async function analyzeBrandWithOpenAI(
+  url: string,
+  scrapedData: Awaited<ReturnType<typeof scrapeWebsite>>,
+  openai: OpenAI
+): Promise<BrandPerception> {
+  console.log('analyzeBrandWithOpenAI: Starting brand perception analysis');
+
+  const prompt = `You are a brand strategist analyzing how AI agents (ChatGPT, Claude, Gemini, Perplexity, Grok) perceive this website's brand.
+
+Website URL: ${url}
+
+Social Media Tags:
+${JSON.stringify(scrapedData.socialTags, null, 2)}
+
+Schema.org Markup:
+${JSON.stringify(scrapedData.schema, null, 2)}
+
+As an AI agent yourself, analyze:
+1. What brand name do you detect from this website?
+2. What brand attributes and characteristics are most prominent?
+3. What is the brand voice and tone?
+4. How clear is the brand positioning (who they serve, what makes them different)?
+5. How well can AI agents differentiate this brand from competitors?
+6. What emotional tone does the brand convey?
+7. How clear is the target audience?
+
+Format your response as JSON:
+{
+  "brandName": "Detected brand name or null",
+  "detectedBrandAttributes": ["attribute 1", "attribute 2", "attribute 3"],
+  "brandVoiceCharacteristics": ["characteristic 1", "characteristic 2"],
+  "positioningClarity": 0-100,
+  "differentiationScore": 0-100,
+  "emotionalTone": "Professional|Friendly|Innovative|etc",
+  "targetAudienceClarity": 0-100
+}`;
+
+  const completion = await openai.chat.completions.create({
+    model: "gpt-4o",
+    messages: [
+      {
+        role: "system",
+        content: "You are a brand strategist analyzing website brand perception from an AI agent's perspective. Respond with valid JSON only.",
+      },
+      {
+        role: "user",
+        content: prompt,
+      },
+    ],
+    temperature: 0.7,
+    max_tokens: 2048,
+    response_format: { type: "json_object" },
+  });
+
+  const content = completion.choices[0].message.content;
+  if (!content) throw new Error("No brand analysis from OpenAI");
+
+  return JSON.parse(content);
+}
+
+async function analyzeBrandWithClaude(
+  url: string,
+  scrapedData: Awaited<ReturnType<typeof scrapeWebsite>>,
+  anthropic: Anthropic
+): Promise<BrandPerception> {
+  console.log('analyzeBrandWithClaude: Starting brand perception analysis');
+
+  const prompt = `You are a brand strategist analyzing how AI agents (ChatGPT, Claude, Gemini, Perplexity, Grok) perceive this website's brand.
+
+Website URL: ${url}
+
+Social Media Tags:
+${JSON.stringify(scrapedData.socialTags, null, 2)}
+
+Schema.org Markup:
+${JSON.stringify(scrapedData.schema, null, 2)}
+
+As an AI agent yourself (Claude), analyze:
+1. What brand name do you detect from this website?
+2. What brand attributes and characteristics are most prominent to you?
+3. What is the brand voice and tone you perceive?
+4. How clear is the brand positioning (who they serve, what differentiates them)?
+5. How well can you differentiate this brand from potential competitors?
+6. What emotional tone does the brand convey to AI systems?
+7. How clear is the target audience when you scan this content?
+
+Format your response as JSON:
+{
+  "brandName": "Detected brand name or null",
+  "detectedBrandAttributes": ["attribute 1", "attribute 2", "attribute 3"],
+  "brandVoiceCharacteristics": ["characteristic 1", "characteristic 2"],
+  "positioningClarity": 0-100,
+  "differentiationScore": 0-100,
+  "emotionalTone": "Professional|Friendly|Innovative|etc",
+  "targetAudienceClarity": 0-100
+}`;
+
+  const message = await anthropic.messages.create({
+    model: "claude-3-5-sonnet-20241022",
+    max_tokens: 2048,
+    messages: [{ role: "user", content: prompt }],
+  });
+
+  const content = message.content[0];
+  if (content.type !== "text") throw new Error("No text from Claude brand analysis");
+
+  let jsonText = content.text;
+  const jsonMatch = jsonText.match(/```json\n?([\s\S]*?)\n?```/);
+  if (jsonMatch) jsonText = jsonMatch[1];
+
+  return JSON.parse(jsonText);
+}
+
+async function generateBrandRecommendations(
+  openaiPerception: BrandPerception,
+  claudePerception: BrandPerception,
+  openai: OpenAI
+): Promise<{
+  metadataRecommendations: string[];
+  contentRecommendations: string[];
+  designRecommendations: string[];
+  aiAgentOptimizations: AIAgentRecommendation[];
+}> {
+  console.log('generateBrandRecommendations: Creating actionable recommendations');
+
+  const prompt = `Based on dual-AI brand perception analysis, provide actionable recommendations for improving brand clarity for AI agents.
+
+OpenAI Perception:
+${JSON.stringify(openaiPerception, null, 2)}
+
+Claude Perception:
+${JSON.stringify(claudePerception, null, 2)}
+
+Provide specific recommendations for:
+1. **Metadata optimizations** (meta tags, Open Graph, Twitter Cards)
+2. **Content improvements** (copy, messaging, value props)
+3. **Design/UX changes** (visual hierarchy, CTAs, layout)
+4. **AI-agent specific optimizations** for ChatGPT, Claude, Gemini, Perplexity
+
+Format as JSON:
+{
+  "metadataRecommendations": ["specific action 1", "specific action 2", "specific action 3"],
+  "contentRecommendations": ["specific action 1", "specific action 2", "specific action 3"],
+  "designRecommendations": ["specific action 1", "specific action 2"],
+  "aiAgentOptimizations": [
+    {
+      "agent": "ChatGPT",
+      "priority": "High",
+      "recommendation": "specific recommendation",
+      "rationale": "why this matters",
+      "implementation": "how to do it"
+    },
+    {
+      "agent": "Claude",
+      "priority": "High",
+      "recommendation": "specific recommendation",
+      "rationale": "why this matters",
+      "implementation": "how to do it"
+    },
+    {
+      "agent": "Gemini",
+      "priority": "Medium",
+      "recommendation": "specific recommendation",
+      "rationale": "why this matters",
+      "implementation": "how to do it"
+    }
+  ]
+}`;
+
+  const completion = await openai.chat.completions.create({
+    model: "gpt-4o",
+    messages: [
+      {
+        role: "system",
+        content: "You are a GEO (Generative Engine Optimization) expert. Provide specific, actionable recommendations. Respond with valid JSON only.",
+      },
+      {
+        role: "user",
+        content: prompt,
+      },
+    ],
+    temperature: 0.8,
+    max_tokens: 3072,
+    response_format: { type: "json_object" },
+  });
+
+  const content = completion.choices[0].message.content;
+  if (!content) throw new Error("No recommendations from OpenAI");
+
+  return JSON.parse(content);
+}
+
+function createBrandConsensus(
+  openaiPerception: BrandPerception,
+  claudePerception: BrandPerception,
+  recommendations: {
+    metadataRecommendations: string[];
+    contentRecommendations: string[];
+    designRecommendations: string[];
+    aiAgentOptimizations: AIAgentRecommendation[];
+  }
+): BrandAnalysis {
+  // Find agreed brand attributes
+  const consensusBrandAttributes = openaiPerception.detectedBrandAttributes.filter(attr =>
+    claudePerception.detectedBrandAttributes.some(cAttr =>
+      cAttr.toLowerCase().includes(attr.toLowerCase()) || attr.toLowerCase().includes(cAttr.toLowerCase())
+    )
+  );
+
+  // Identify strengths (high scores) and weaknesses (low scores)
+  const brandStrengths: string[] = [];
+  const brandWeaknesses: string[] = [];
+
+  const avgPositioning = (openaiPerception.positioningClarity + claudePerception.positioningClarity) / 2;
+  const avgDifferentiation = (openaiPerception.differentiationScore + claudePerception.differentiationScore) / 2;
+  const avgTargetAudience = (openaiPerception.targetAudienceClarity + claudePerception.targetAudienceClarity) / 2;
+
+  if (avgPositioning >= 70) brandStrengths.push("Clear brand positioning");
+  else if (avgPositioning < 50) brandWeaknesses.push("Unclear brand positioning");
+
+  if (avgDifferentiation >= 70) brandStrengths.push("Strong differentiation");
+  else if (avgDifferentiation < 50) brandWeaknesses.push("Weak competitive differentiation");
+
+  if (avgTargetAudience >= 70) brandStrengths.push("Well-defined target audience");
+  else if (avgTargetAudience < 50) brandWeaknesses.push("Unclear target audience");
+
+  if (consensusBrandAttributes.length >= 3) {
+    brandStrengths.push("Consistent brand attributes across AI agents");
+  }
+
+  if (consensusBrandAttributes.length < 2) {
+    brandWeaknesses.push("Inconsistent brand perception across AI platforms");
+  }
+
+  const competitivePositioning = avgDifferentiation >= 70
+    ? "Strong - Brand stands out clearly to AI agents"
+    : avgDifferentiation >= 50
+    ? "Moderate - Some differentiation visible to AI agents"
+    : "Weak - Brand blends in with competitors from AI perspective";
+
+  const overallBrandClarityScore = Math.round((avgPositioning + avgDifferentiation + avgTargetAudience) / 3);
+
+  return {
+    openaiPerception,
+    claudePerception,
+    consensusBrandAttributes,
+    brandStrengths,
+    brandWeaknesses,
+    competitivePositioning,
+    metadataRecommendations: recommendations.metadataRecommendations,
+    contentRecommendations: recommendations.contentRecommendations,
+    designRecommendations: recommendations.designRecommendations,
+    aiAgentOptimizations: recommendations.aiAgentOptimizations,
+    overallBrandClarityScore,
+  };
+}
+
 // Diagnostic logging helper
 interface DiagnosticLog {
   step: string;
@@ -620,6 +877,76 @@ export async function POST(request: Request) {
       diagnostics.find(d => d.step === 'Analyze with Claude')!.error = 'No API key';
     }
 
+    // Run brand perception analysis if both AI agents are available
+    console.log('Starting brand perception analysis...');
+    let brandAnalysis: BrandAnalysis | undefined;
+
+    if (anthropic) {
+      diagnostics.push({
+        step: 'Brand analysis with OpenAI',
+        status: 'started',
+        timestamp: Date.now(),
+      });
+      diagnostics.push({
+        step: 'Brand analysis with Claude',
+        status: 'started',
+        timestamp: Date.now(),
+      });
+
+      try {
+        const [openBrandResult, claudeBrandResult, _] = await Promise.allSettled([
+          analyzeBrandWithOpenAI(url, scraped, openai),
+          analyzeBrandWithClaude(url, scraped, anthropic),
+          // Wait a small delay to not overwhelm APIs
+          new Promise(resolve => setTimeout(resolve, 100)),
+        ]);
+
+        // Update diagnostics
+        if (openBrandResult.status === 'fulfilled') {
+          const diag = diagnostics.find(d => d.step === 'Brand analysis with OpenAI')!;
+          diag.status = 'success';
+          diag.duration = Date.now() - diag.timestamp;
+        } else {
+          const diag = diagnostics.find(d => d.step === 'Brand analysis with OpenAI')!;
+          diag.status = 'error';
+          diag.error = openBrandResult.reason?.message || 'Unknown error';
+        }
+
+        if (claudeBrandResult.status === 'fulfilled') {
+          const diag = diagnostics.find(d => d.step === 'Brand analysis with Claude')!;
+          diag.status = 'success';
+          diag.duration = Date.now() - diag.timestamp;
+        } else {
+          const diag = diagnostics.find(d => d.step === 'Brand analysis with Claude')!;
+          diag.status = 'error';
+          diag.error = claudeBrandResult.reason?.message || 'Unknown error';
+        }
+
+        if (openBrandResult.status === 'fulfilled' && claudeBrandResult.status === 'fulfilled') {
+          // Generate recommendations based on both perceptions
+          const recommendations = await generateBrandRecommendations(
+            openBrandResult.value,
+            claudeBrandResult.value,
+            openai
+          );
+
+          // Create consensus brand analysis
+          brandAnalysis = createBrandConsensus(
+            openBrandResult.value,
+            claudeBrandResult.value,
+            recommendations
+          );
+
+          console.log('Brand perception analysis completed');
+        } else {
+          console.warn('One or both brand analyses failed');
+        }
+      } catch (brandError) {
+        console.error('Brand analysis error:', brandError);
+        // Continue without brand analysis rather than failing entire request
+      }
+    }
+
     console.log('Analysis complete, preparing response...');
 
     const totalDuration = Date.now() - startTime;
@@ -680,6 +1007,7 @@ export async function POST(request: Request) {
       schema: scraped.schema || undefined,
       socialTags: scraped.socialTags || undefined,
       dualAI: dualAI || undefined,
+      brandAnalysis: brandAnalysis || undefined,
       // Diagnostics (only in debug mode)
       ...(debug && {
         diagnostics: {

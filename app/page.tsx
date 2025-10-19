@@ -12,6 +12,7 @@ import {
   AnalysisRequestBody,
   ErrorResponse,
 } from "@/lib/report-types";
+import { BrandAnalysisSection } from "@/components/sections/brand-analysis-section";
 
 // Demo report for testing (unused in production)
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -226,6 +227,7 @@ export default function Home() {
                 summary={report.summary}
               />
               <ScoreGrid report={report} />
+              {report.brandAnalysis && <BrandAnalysisSection report={report} />}
               {report.dualAI && <DualAISection report={report} />}
               <PerformanceSection report={report} />
               {(report.ssl || report.security) && <SecuritySection report={report} />}
@@ -239,7 +241,7 @@ export default function Home() {
         </div>
       </main>
       <footer className="py-6 text-center text-xs text-muted-foreground">
-        <p>v1.2.2</p>
+        <p>v1.3.0</p>
       </footer>
     </div>
   );

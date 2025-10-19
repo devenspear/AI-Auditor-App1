@@ -2,8 +2,11 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
   return NextResponse.json({
-    version: "1.2.2",
+    version: "1.3.0",
     features: [
+      "Dual-AI brand perception analysis",
+      "AI agent-specific optimization recommendations (ChatGPT, Claude, Gemini, Perplexity)",
+      "Brand clarity scoring and consensus analysis",
       "Comprehensive error handling",
       "Admin diagnostics dashboard",
       "Debug mode with detailed logging",
