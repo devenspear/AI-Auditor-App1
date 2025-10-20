@@ -4,6 +4,8 @@ import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import type { SubmissionData, AnalysisReport } from "@/lib/report-types";
+import { ProgressBar } from "@/components/ProgressBar";
+import { VersionFooter } from "@/components/VersionFooter";
 
 interface StoredSubmission {
   submissionData: SubmissionData;
@@ -118,31 +120,105 @@ function ReportContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background via-background/95 to-primary/5">
-      {/* Header */}
-      <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">AI Audit Report</h1>
-            <p className="text-sm text-muted-foreground">
-              Generated {new Date(analysisReport.analyzedAt).toLocaleDateString()}
-            </p>
+    <div className="min-h-screen bg-slate-50">
+      {/* Header - Sticky Navigation */}
+      <header className="border-b border-slate-200 bg-white sticky top-0 z-50 shadow-sm">
+        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded"></div>
+            <div>
+              <h1 className="text-xl font-bold text-slate-900">AI Readiness Assessment</h1>
+              <p className="text-xs text-slate-500">
+                {new Date(analysisReport.analyzedAt).toLocaleDateString('en-US', {
+                  year: 'numeric', month: 'long', day: 'numeric'
+                })}
+              </p>
+            </div>
           </div>
           <Link
             href="/"
-            className="rounded-lg bg-primary/10 px-4 py-2 text-sm font-medium text-primary hover:bg-primary/20 transition"
+            className="rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200 transition"
           >
-            New Analysis
+            ← New Analysis
           </Link>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-12 max-w-7xl">
-        {/* Company Information Card */}
-        <section className="mb-12 rounded-2xl border border-border bg-card p-8 shadow-lg">
+      <main className="container mx-auto px-6 py-8 max-w-5xl">
+        {/* Cover Page */}
+        <div className="bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 rounded-xl p-12 mb-8 text-white shadow-2xl">
+          <div className="border-l-4 border-blue-400 pl-6">
+            <p className="text-blue-300 text-sm font-semibold uppercase tracking-wider mb-2">Confidential Report</p>
+            <h1 className="text-4xl font-bold mb-4">AI & GEO Readiness Assessment</h1>
+            <p className="text-xl text-slate-300 mb-8">Comprehensive Analysis for {submissionData.companyName}</p>
+            <div className="grid grid-cols-2 gap-6 text-sm">
+              <div>
+                <p className="text-slate-400 mb-1">Prepared For</p>
+                <p className="font-semibold">{submissionData.firstName} {submissionData.lastName}</p>
+                <p className="text-slate-300">{submissionData.jobTitle || 'Decision Maker'}</p>
+              </div>
+              <div>
+                <p className="text-slate-400 mb-1">Report Date</p>
+                <p className="font-semibold">
+                  {new Date(analysisReport.analyzedAt).toLocaleDateString('en-US', {
+                    year: 'numeric', month: 'long', day: 'numeric'
+                  })}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Executive Summary */}
+        <section className="bg-white rounded-xl border border-slate-200 p-8 mb-8 shadow-sm">
+          <div className="flex items-start gap-4 mb-6">
+            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+              <span className="text-blue-600 font-bold text-lg">📊</span>
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-slate-900 mb-2">Executive Summary</h2>
+              <p className="text-slate-600">Overall assessment and key findings</p>
+            </div>
+          </div>
+
+          {/* Overall Score - Prominent */}
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-6 mb-6 border border-blue-100">
+            <div className="text-center">
+              <p className="text-slate-600 text-sm font-medium uppercase tracking-wide mb-2">Overall Score</p>
+              <div className={`text-6xl font-black mb-2 ${getGradeColor(score.grade)}`}>
+                {score.grade}
+              </div>
+              <p className="text-2xl font-bold text-slate-700 mb-4">{score.overall}/100</p>
+              <ProgressBar value={score.overall} color={score.overall >= 70 ? 'green' : score.overall >= 50 ? 'yellow' : 'red'} size="lg" showPercentage={false} />
+            </div>
+          </div>
+
+          {/* Key Metrics Grid */}
+          <div className="grid md:grid-cols-3 gap-4">
+            <div className="border border-slate-200 rounded-lg p-4">
+              <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">Brand Voice Clarity</p>
+              <p className="text-3xl font-bold text-slate-900 mb-2">{score.brandVoice}</p>
+              <ProgressBar value={score.brandVoice} color={score.brandVoice >= 70 ? 'green' : 'yellow'} showPercentage={false} />
+            </div>
+            <div className="border border-slate-200 rounded-lg p-4">
+              <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">GEO Readiness</p>
+              <p className="text-3xl font-bold text-slate-900 mb-2">{score.geoReadiness}</p>
+              <ProgressBar value={score.geoReadiness} color={score.geoReadiness >= 70 ? 'green' : 'yellow'} showPercentage={false} />
+            </div>
+            <div className="border border-slate-200 rounded-lg p-4">
+              <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">Technical Health</p>
+              <p className="text-3xl font-bold text-slate-900 mb-2">{score.technicalHealth}</p>
+              <ProgressBar value={score.technicalHealth} color={score.technicalHealth >= 70 ? 'green' : 'yellow'} showPercentage={false} />
+            </div>
+          </div>
+        </section>
+
+        {/* Client Information Card */}
+        <section className="bg-white rounded-xl border border-slate-200 p-8 mb-8 shadow-sm">
+          <h2 className="text-xl font-semibold mb-6 text-slate-900 border-b border-slate-200 pb-3">1. Client Information</h2>
           <div className="grid md:grid-cols-2 gap-8">
             <div>
-              <h2 className="text-xl font-semibold mb-4 text-foreground">Company Information</h2>
+              <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-4">Company Details</h3>
               <div className="space-y-3">
                 <div>
                   <label className="text-sm text-muted-foreground">Company Name</label>
