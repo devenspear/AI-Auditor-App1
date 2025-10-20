@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Chart, RadarController, RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend } from 'chart.js';
 import type { SubmissionData } from '@/lib/report-types';
+import { VersionFooter } from '@/components/VersionFooter';
 
 // Register Chart.js components
 Chart.register(RadarController, RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend);
@@ -671,7 +672,9 @@ export default function AIAuditor() {
 
         <footer className="text-center mt-16 py-8 border-t border-slate-200">
           <p className="text-slate-500 mt-2 text-sm">Ready to lead the AI revolution? Let&apos;s build the future of marketing, together.</p>
-          <p className="mt-4 text-xs text-slate-400">v1.4.0</p>
+          <div className="mt-4">
+            <VersionFooter />
+          </div>
         </footer>
       </div>
       </div>

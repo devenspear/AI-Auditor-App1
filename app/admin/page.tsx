@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { VersionFooter } from "@/components/VersionFooter";
 
 interface DiagnosticStep {
   step: string;
@@ -355,7 +356,7 @@ export default function AdminDashboard() {
 
         {/* Footer */}
         <div className="mt-8 text-center text-sm text-muted-foreground">
-          <p>Admin Dashboard v1.4.0 • Diagnostics Mode Enabled</p>
+          <p>Admin Dashboard <VersionFooter prefix="" className="inline text-sm text-muted-foreground" /> • Diagnostics Mode Enabled</p>
         </div>
       </div>
     </div>
