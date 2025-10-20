@@ -1,0 +1,287 @@
+/* Print Stylesheet for Professional Reports */
+/* Optimized for PDF generation and physical printing */
+
+@media print {
+  /* Page Setup */
+  @page {
+    size: A4;
+    margin: 1.5cm 2cm;
+  }
+
+  /* Global Print Styles */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  body {
+    background: white !important;
+    font-size: 10pt;
+    line-height: 1.4;
+  }
+
+  /* Hide Navigation Elements */
+  header,
+  footer,
+  .no-print {
+    display: none !important;
+  }
+
+  /* Main Container */
+  main {
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Page Breaks */
+  section {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    page-break-after: auto;
+    break-after: auto;
+  }
+
+  /* Cover Page - Always on its own page */
+  section:first-of-type {
+    page-break-after: always;
+    break-after: always;
+  }
+
+  /* Avoid breaking these elements */
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+    break-after: avoid;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Cards and Sections */
+  .rounded-xl,
+  .rounded-2xl,
+  .rounded-lg {
+    border-radius: 8px !important;
+  }
+
+  /* Simplify Shadows for Print */
+  .shadow-lg,
+  .shadow-2xl,
+  .shadow-sm {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+  }
+
+  /* Gradients - Simplify for Print */
+  .bg-gradient-to-br,
+  .bg-gradient-to-r,
+  .bg-gradient-to-b {
+    background: linear-gradient(to bottom right, #1e3a8a, #312e81) !important;
+  }
+
+  /* Cover Page Specific */
+  section:first-of-type {
+    min-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  /* Typography */
+  h1 {
+    font-size: 24pt;
+    margin-bottom: 12pt;
+  }
+
+  h2 {
+    font-size: 16pt;
+    margin-bottom: 8pt;
+    color: #1e293b !important;
+  }
+
+  h3 {
+    font-size: 12pt;
+    margin-bottom: 6pt;
+  }
+
+  p {
+    font-size: 10pt;
+    margin-bottom: 6pt;
+  }
+
+  /* Links */
+  a {
+    color: inherit !important;
+    text-decoration: none !important;
+  }
+
+  a[href^="http"]:after {
+    content: " (" attr(href) ")";
+    font-size: 8pt;
+    color: #64748b;
+  }
+
+  /* Progress Bars - Keep Colors */
+  .bg-blue-600,
+  .bg-green-600,
+  .bg-yellow-500,
+  .bg-red-600 {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Icons and Visual Elements */
+  .w-10.h-10 {
+    width: 24pt !important;
+    height: 24pt !important;
+  }
+
+  /* Grid Layouts */
+  .grid {
+    display: grid;
+    gap: 12pt;
+  }
+
+  .md\:grid-cols-2 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .md\:grid-cols-3 {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  /* Spacing */
+  .mb-8,
+  .mb-12 {
+    margin-bottom: 16pt !important;
+  }
+
+  .p-8,
+  .p-6 {
+    padding: 12pt !important;
+  }
+
+  /* Tables and Lists */
+  ul, ol {
+    margin-left: 16pt;
+    margin-bottom: 8pt;
+  }
+
+  li {
+    margin-bottom: 4pt;
+  }
+
+  /* Borders */
+  .border-slate-200,
+  .border-border {
+    border-color: #e2e8f0 !important;
+  }
+
+  /* Background Colors - Lighten for Print */
+  .bg-slate-50,
+  .bg-background {
+    background-color: #f8fafc !important;
+  }
+
+  .bg-blue-50 {
+    background-color: #eff6ff !important;
+  }
+
+  .bg-green-50 {
+    background-color: #f0fdf4 !important;
+  }
+
+  .bg-pink-50 {
+    background-color: #fdf2f8 !important;
+  }
+
+  .bg-purple-50 {
+    background-color: #faf5ff !important;
+  }
+
+  /* Score Cards */
+  .text-6xl,
+  .text-7xl {
+    font-size: 48pt !important;
+    font-weight: bold;
+  }
+
+  .text-5xl {
+    font-size: 36pt !important;
+  }
+
+  .text-4xl {
+    font-size: 28pt !important;
+  }
+
+  .text-3xl {
+    font-size: 20pt !important;
+  }
+
+  .text-2xl {
+    font-size: 16pt !important;
+  }
+
+  /* Details/Summary Elements */
+  details {
+    display: none !important;
+  }
+
+  /* Ensure Colored Text is Visible */
+  .text-green-600,
+  .text-blue-600,
+  .text-purple-600,
+  .text-pink-600,
+  .text-yellow-600,
+  .text-red-600,
+  .text-orange-600 {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Footer CTA - Hide or Simplify */
+  section:last-of-type {
+    display: none;
+  }
+
+  /* Animations - Disable */
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  /* Ensure Background Colors Print */
+  .bg-card,
+  .rounded-xl,
+  .rounded-2xl {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Page Numbers */
+  @page {
+    @bottom-right {
+      content: "Page " counter(page) " of " counter(pages);
+      font-size: 8pt;
+      color: #64748b;
+    }
+  }
+
+  /* Confidential Watermark (Optional) */
+  .confidential-watermark {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-45deg);
+    font-size: 72pt;
+    color: rgba(0, 0, 0, 0.03);
+    z-index: -1;
+    pointer-events: none;
+  }
+}
+
+/* Screen-only elements */
+@media screen {
+  .print-only {
+    display: none;
+  }
+}

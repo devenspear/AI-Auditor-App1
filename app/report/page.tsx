@@ -6,6 +6,7 @@ import Link from "next/link";
 import type { SubmissionData, AnalysisReport } from "@/lib/report-types";
 import { ProgressBar } from "@/components/ProgressBar";
 import { VersionFooter } from "@/components/VersionFooter";
+import "./print.css";
 
 interface StoredSubmission {
   submissionData: SubmissionData;
@@ -135,12 +136,21 @@ function ReportContent() {
               </p>
             </div>
           </div>
-          <Link
-            href="/"
-            className="rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200 transition"
-          >
-            ← New Analysis
-          </Link>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => window.print()}
+              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition no-print"
+              title="Print or save as PDF"
+            >
+              🖨️ Print Report
+            </button>
+            <Link
+              href="/"
+              className="rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200 transition no-print"
+            >
+              ← New Analysis
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -215,7 +225,15 @@ function ReportContent() {
 
         {/* Client Information Card */}
         <section className="bg-white rounded-xl border border-slate-200 p-8 mb-8 shadow-sm">
-          <h2 className="text-xl font-semibold mb-6 text-slate-900 border-b border-slate-200 pb-3">1. Client Information</h2>
+          <div className="flex items-start gap-4 mb-6">
+            <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
+              <span className="text-slate-600 font-bold text-lg">🏢</span>
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-slate-900 mb-2">Client Information</h2>
+              <p className="text-slate-600">Company and contact details</p>
+            </div>
+          </div>
           <div className="grid md:grid-cols-2 gap-8">
             <div>
               <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-4">Company Details</h3>
@@ -247,7 +265,7 @@ function ReportContent() {
               </div>
             </div>
             <div>
-              <h2 className="text-xl font-semibold mb-4 text-foreground">Contact Information</h2>
+              <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-4">Contact Information</h3>
               <div className="space-y-3">
                 <div>
                   <label className="text-sm text-muted-foreground">Contact Person</label>
@@ -276,37 +294,18 @@ function ReportContent() {
           </div>
         </section>
 
-        {/* Overall Score Card */}
-        <section className="mb-12 rounded-2xl border border-border bg-gradient-to-br from-primary/5 to-primary/10 p-8 shadow-lg">
-          <div className="text-center">
-            <h2 className="text-2xl font-semibold mb-4 text-foreground">Overall Score</h2>
-            <div className={`text-7xl font-bold mb-2 ${getGradeColor(score.grade)}`}>
-              {score.grade}
-            </div>
-            <div className="text-3xl font-semibold text-muted-foreground mb-6">
-              {score.overall}/100
-            </div>
-            <div className="grid md:grid-cols-3 gap-6 mt-8">
-              <div className="rounded-lg bg-card/50 backdrop-blur p-4">
-                <div className="text-3xl font-bold text-primary">{score.brandVoice}</div>
-                <div className="text-sm text-muted-foreground mt-1">Brand Voice</div>
-              </div>
-              <div className="rounded-lg bg-card/50 backdrop-blur p-4">
-                <div className="text-3xl font-bold text-primary">{score.geoReadiness}</div>
-                <div className="text-sm text-muted-foreground mt-1">GEO Readiness</div>
-              </div>
-              <div className="rounded-lg bg-card/50 backdrop-blur p-4">
-                <div className="text-3xl font-bold text-primary">{score.technicalHealth}</div>
-                <div className="text-sm text-muted-foreground mt-1">Technical Health</div>
-              </div>
-            </div>
-          </div>
-        </section>
-
         {/* Business Context (if provided) */}
         {(submissionData.productDescription || submissionData.challenges || submissionData.marketingGoals) && (
-          <section className="mb-12 rounded-2xl border border-border bg-card p-8 shadow-lg">
-            <h2 className="text-2xl font-semibold mb-6 text-foreground">Business Context</h2>
+          <section className="bg-white rounded-xl border border-slate-200 p-8 mb-8 shadow-sm">
+            <div className="flex items-start gap-4 mb-6">
+              <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <span className="text-indigo-600 font-bold text-lg">💼</span>
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-slate-900 mb-2">Business Context</h2>
+                <p className="text-slate-600">Your company&apos;s unique situation and goals</p>
+              </div>
+            </div>
             <div className="space-y-6">
               {submissionData.productDescription && (
                 <div>
@@ -344,8 +343,16 @@ function ReportContent() {
 
         {/* Dual AI Analysis */}
         {dualAI && (
-          <section className="mb-12 rounded-2xl border border-border bg-card p-8 shadow-lg">
-            <h2 className="text-2xl font-semibold mb-6 text-foreground">Dual AI Analysis</h2>
+          <section className="bg-white rounded-xl border border-slate-200 p-8 mb-8 shadow-sm">
+            <div className="flex items-start gap-4 mb-6">
+              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <span className="text-purple-600 font-bold text-lg">🤖</span>
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-slate-900 mb-2">Dual AI Analysis</h2>
+                <p className="text-slate-600">Consensus insights from OpenAI and Claude</p>
+              </div>
+            </div>
             <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2">
               <span className="text-sm font-medium text-primary">
                 Confidence Level: {dualAI.confidence.toUpperCase()}
@@ -429,15 +436,24 @@ function ReportContent() {
 
         {/* Brand Analysis */}
         {brandAnalysis && (
-          <section className="mb-12 rounded-2xl border border-border bg-card p-8 shadow-lg">
-            <h2 className="text-2xl font-semibold mb-6 text-foreground">Brand Perception Analysis</h2>
+          <section className="bg-white rounded-xl border border-slate-200 p-8 mb-8 shadow-sm">
+            <div className="flex items-start gap-4 mb-6">
+              <div className="w-10 h-10 bg-pink-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <span className="text-pink-600 font-bold text-lg">🎨</span>
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-slate-900 mb-2">Brand Perception Analysis</h2>
+                <p className="text-slate-600">How AI agents perceive and understand your brand</p>
+              </div>
+            </div>
 
             {/* Overall Brand Clarity Score */}
-            <div className="mb-8 text-center rounded-lg bg-gradient-to-r from-primary/10 to-primary/5 p-6">
-              <div className="text-5xl font-bold text-primary mb-2">
+            <div className="mb-8 text-center rounded-lg bg-gradient-to-br from-pink-50 to-purple-50 p-6 border border-pink-100">
+              <p className="text-slate-600 text-sm font-medium uppercase tracking-wide mb-2">Overall Brand Clarity Score</p>
+              <div className="text-5xl font-bold text-pink-600 mb-4">
                 {brandAnalysis.overallBrandClarityScore}
               </div>
-              <div className="text-sm text-muted-foreground">Overall Brand Clarity Score</div>
+              <ProgressBar value={brandAnalysis.overallBrandClarityScore} color={brandAnalysis.overallBrandClarityScore >= 70 ? 'green' : 'yellow'} size="lg" showPercentage={false} />
             </div>
 
             {/* Consensus Brand Attributes */}
@@ -524,28 +540,47 @@ function ReportContent() {
         )}
 
         {/* Performance Metrics */}
-        <section className="mb-12 rounded-2xl border border-border bg-card p-8 shadow-lg">
-          <h2 className="text-2xl font-semibold mb-6 text-foreground">Performance Metrics</h2>
+        <section className="bg-white rounded-xl border border-slate-200 p-8 mb-8 shadow-sm">
+          <div className="flex items-start gap-4 mb-6">
+            <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center flex-shrink-0">
+              <span className="text-yellow-600 font-bold text-lg">⚡</span>
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-slate-900 mb-2">Performance Metrics</h2>
+              <p className="text-slate-600">PageSpeed scores and Core Web Vitals</p>
+            </div>
+          </div>
           <div className="grid md:grid-cols-3 gap-6">
-            <div className="rounded-lg bg-background p-6 border border-border">
-              <div className="text-3xl font-bold text-primary mb-2">{performance.mobileScore}</div>
-              <div className="text-sm text-muted-foreground">Mobile Score</div>
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-6">
+              <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">Mobile Score</p>
+              <div className="text-3xl font-bold text-slate-900 mb-3">{performance.mobileScore}</div>
+              <ProgressBar value={performance.mobileScore} color={performance.mobileScore >= 90 ? 'green' : performance.mobileScore >= 50 ? 'yellow' : 'red'} showPercentage={false} />
             </div>
-            <div className="rounded-lg bg-background p-6 border border-border">
-              <div className="text-3xl font-bold text-primary mb-2">{performance.desktopScore}</div>
-              <div className="text-sm text-muted-foreground">Desktop Score</div>
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-6">
+              <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">Desktop Score</p>
+              <div className="text-3xl font-bold text-slate-900 mb-3">{performance.desktopScore}</div>
+              <ProgressBar value={performance.desktopScore} color={performance.desktopScore >= 90 ? 'green' : performance.desktopScore >= 50 ? 'yellow' : 'red'} showPercentage={false} />
             </div>
-            <div className="rounded-lg bg-background p-6 border border-border">
-              <div className="text-3xl font-bold text-primary mb-2">{performance.overallScore}</div>
-              <div className="text-sm text-muted-foreground">Overall Performance</div>
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-6">
+              <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">Overall Performance</p>
+              <div className="text-3xl font-bold text-slate-900 mb-3">{performance.overallScore}</div>
+              <ProgressBar value={performance.overallScore} color={performance.overallScore >= 90 ? 'green' : performance.overallScore >= 50 ? 'yellow' : 'red'} showPercentage={false} />
             </div>
           </div>
         </section>
 
         {/* SSL Security */}
         {ssl && (
-          <section className="mb-12 rounded-2xl border border-border bg-card p-8 shadow-lg">
-            <h2 className="text-2xl font-semibold mb-6 text-foreground">SSL Security</h2>
+          <section className="bg-white rounded-xl border border-slate-200 p-8 mb-8 shadow-sm">
+            <div className="flex items-start gap-4 mb-6">
+              <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <span className="text-green-600 font-bold text-lg">🔒</span>
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-slate-900 mb-2">SSL Security</h2>
+                <p className="text-slate-600">Certificate grade and encryption status</p>
+              </div>
+            </div>
             <div className="flex items-center gap-4">
               <div className={`text-4xl font-bold ${ssl.grade === 'A+' || ssl.grade === 'A' ? 'text-green-600' : 'text-yellow-600'}`}>
                 {ssl.grade}
@@ -562,8 +597,16 @@ function ReportContent() {
 
         {/* Schema.org Structured Data */}
         {schema && (
-          <section className="mb-12 rounded-2xl border border-border bg-card p-8 shadow-lg">
-            <h2 className="text-2xl font-semibold mb-6 text-foreground">Structured Data</h2>
+          <section className="bg-white rounded-xl border border-slate-200 p-8 mb-8 shadow-sm">
+            <div className="flex items-start gap-4 mb-6">
+              <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <span className="text-orange-600 font-bold text-lg">📋</span>
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-slate-900 mb-2">Structured Data</h2>
+                <p className="text-slate-600">Schema.org markup for AI discoverability</p>
+              </div>
+            </div>
             <div className="mb-4">
               <div className="flex items-center gap-3 mb-3">
                 <div className={`text-3xl font-bold ${schema.hasSchema ? 'text-green-600' : 'text-yellow-600'}`}>
@@ -604,16 +647,24 @@ function ReportContent() {
 
         {/* Social Media Tags */}
         {socialTags && (
-          <section className="mb-12 rounded-2xl border border-border bg-card p-8 shadow-lg">
-            <h2 className="text-2xl font-semibold mb-6 text-foreground">Social Media Optimization</h2>
+          <section className="bg-white rounded-xl border border-slate-200 p-8 mb-8 shadow-sm">
+            <div className="flex items-start gap-4 mb-6">
+              <div className="w-10 h-10 bg-cyan-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <span className="text-cyan-600 font-bold text-lg">📱</span>
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-slate-900 mb-2">Social Media Optimization</h2>
+                <p className="text-slate-600">Open Graph and Twitter Card implementation</p>
+              </div>
+            </div>
             <div className="grid md:grid-cols-2 gap-6 mb-6">
-              <div className="rounded-lg bg-background p-6 border border-border">
-                <h3 className="font-semibold text-foreground mb-4">Open Graph</h3>
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-6">
+                <h3 className="font-semibold text-slate-900 mb-4">Open Graph</h3>
+                <div className="mb-4">
+                  <div className="text-2xl font-bold text-slate-900 mb-2">{socialTags.openGraph.score}/100</div>
+                  <ProgressBar value={socialTags.openGraph.score} color={socialTags.openGraph.score >= 80 ? 'green' : 'yellow'} size="sm" showPercentage={false} />
+                </div>
                 <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Score:</span>
-                    <span className="font-medium text-foreground">{socialTags.openGraph.score}/100</span>
-                  </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Title:</span>
                     <span className={socialTags.openGraph.hasOGTitle ? 'text-green-600' : 'text-red-600'}>
@@ -635,13 +686,13 @@ function ReportContent() {
                 </div>
               </div>
 
-              <div className="rounded-lg bg-background p-6 border border-border">
-                <h3 className="font-semibold text-foreground mb-4">Twitter Card</h3>
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-6">
+                <h3 className="font-semibold text-slate-900 mb-4">Twitter Card</h3>
+                <div className="mb-4">
+                  <div className="text-2xl font-bold text-slate-900 mb-2">{socialTags.twitterCard.score}/100</div>
+                  <ProgressBar value={socialTags.twitterCard.score} color={socialTags.twitterCard.score >= 80 ? 'green' : 'yellow'} size="sm" showPercentage={false} />
+                </div>
                 <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Score:</span>
-                    <span className="font-medium text-foreground">{socialTags.twitterCard.score}/100</span>
-                  </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Card Type:</span>
                     <span className={socialTags.twitterCard.hasCard ? 'text-green-600' : 'text-red-600'}>
