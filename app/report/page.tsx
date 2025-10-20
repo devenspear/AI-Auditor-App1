@@ -731,8 +731,91 @@ function ReportContent() {
           </section>
         )}
 
+        {/* Raw Data Viewer */}
+        <section className="bg-white rounded-xl border border-slate-200 p-8 mb-8 shadow-sm no-print">
+          <div className="flex items-start gap-4 mb-6">
+            <div className="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
+              <span className="text-slate-600 font-bold text-lg">💾</span>
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-slate-900 mb-2">Raw Data</h2>
+              <p className="text-slate-600">View complete submission and analysis data</p>
+            </div>
+          </div>
+
+          <details className="group">
+            <summary className="cursor-pointer list-none">
+              <div className="flex items-center justify-between p-4 rounded-lg bg-slate-50 border border-slate-200 hover:bg-slate-100 transition">
+                <span className="font-medium text-slate-900">Click to view JSON data</span>
+                <svg
+                  className="w-5 h-5 text-slate-500 transition-transform group-open:rotate-180"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </summary>
+
+            <div className="mt-4 space-y-4">
+              {/* Submission Data */}
+              <div>
+                <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-2">
+                  Form Submission Data
+                </h3>
+                <pre className="bg-slate-900 text-green-400 rounded-lg p-4 overflow-auto text-xs font-mono max-h-96">
+                  {JSON.stringify(submissionData, null, 2)}
+                </pre>
+              </div>
+
+              {/* Analysis Report */}
+              <div>
+                <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-2">
+                  Analysis Report Data
+                </h3>
+                <pre className="bg-slate-900 text-blue-400 rounded-lg p-4 overflow-auto text-xs font-mono max-h-96">
+                  {JSON.stringify(analysisReport, null, 2)}
+                </pre>
+              </div>
+
+              {/* Copy Buttons */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(JSON.stringify(submissionData, null, 2));
+                    alert('Submission data copied to clipboard!');
+                  }}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition"
+                >
+                  📋 Copy Submission Data
+                </button>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(JSON.stringify(analysisReport, null, 2));
+                    alert('Analysis report copied to clipboard!');
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition"
+                >
+                  📋 Copy Analysis Data
+                </button>
+                <button
+                  onClick={() => {
+                    const fullData = { submissionData, analysisReport, createdAt: new Date().toISOString() };
+                    navigator.clipboard.writeText(JSON.stringify(fullData, null, 2));
+                    alert('Complete report data copied to clipboard!');
+                  }}
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition"
+                >
+                  📋 Copy Complete Data
+                </button>
+              </div>
+            </div>
+          </details>
+        </section>
+
         {/* Footer CTA */}
-        <section className="text-center rounded-2xl border border-border bg-gradient-to-r from-primary/10 to-primary/5 p-12">
+        <section className="text-center rounded-2xl border border-border bg-gradient-to-r from-primary/10 to-primary/5 p-12 no-print">
           <h2 className="text-3xl font-bold text-foreground mb-4">
             Ready to Optimize Your Website?
           </h2>
