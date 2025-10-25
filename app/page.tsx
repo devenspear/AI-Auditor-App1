@@ -234,6 +234,9 @@ export default function AIAuditor() {
       <div className="bg-slate-50 text-slate-700">
         <div className="container mx-auto p-4 md:p-8">
         <header className="text-center my-8 md:my-12">
+          <div className="mb-6">
+            <h2 className="text-3xl md:text-4xl font-black bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent tracking-tight">Nexus Auditor</h2>
+          </div>
           <h1 className="text-4xl md:text-6xl font-black bg-gradient-to-r from-blue-400 via-blue-500 to-slate-600 bg-clip-text text-transparent pb-1">The AI Revolution in Marketing</h1>
           <p className="mt-4 text-lg md:text-xl max-w-3xl mx-auto text-slate-600">A new era is dawning. Brands are no longer defined by what they say, but by how AI understands them. This is the playbook for navigating the next five years.</p>
         </header>
@@ -671,6 +674,7 @@ export default function AIAuditor() {
         </section>
 
         <footer className="text-center mt-16 py-8 border-t border-slate-200">
+          <h3 className="text-2xl font-black bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent tracking-tight mb-3">Nexus Auditor</h3>
           <p className="text-slate-500 mt-2 text-sm">Ready to lead the AI revolution? Let&apos;s build the future of marketing, together.</p>
           <div className="mt-4">
             <VersionFooter />

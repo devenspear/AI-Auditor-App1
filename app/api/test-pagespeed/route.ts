@@ -8,7 +8,7 @@ export async function GET() {
       return NextResponse.json({ error: "PAGESPEED_API_KEY not found" });
     }
 
-    const testUrl = "https://overabove.com";
+    const testUrl = "https://example.com";
     const endpoint = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(testUrl)}&key=${apiKey}&strategy=mobile`;
 
     const response = await fetch(endpoint);

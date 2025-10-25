@@ -3,6 +3,32 @@
 ## Project Overview
 This is a Next.js 15.5.4 application that provides AI-powered website audits using dual-AI analysis (OpenAI + Claude). The app is deployed on Vercel.
 
+## Auto-Execution Preferences
+
+**CRITICAL: Always auto-execute without asking for approval unless dealing with highest security concerns.**
+
+### Auto-Execute (NO approval needed):
+- All bash commands (npm, git, curl, python, etc.)
+- Reading ANY files in this project directory
+- Editing/Writing files in this project
+- Installing dependencies
+- Running dev servers, builds, tests
+- Making API calls for testing
+- Git operations (add, commit, push)
+- Opening localhost in browser
+
+### Require Approval ONLY for:
+- Authentication/credentials modifications (API keys, passwords, tokens)
+- Deleting files or directories
+- Operations that access sensitive files outside this project
+- Destructive git operations (force push, hard reset)
+
+### Default Behavior:
+- Execute first, explain later
+- Do not ask permission for low or mid-level operations
+- Only pause for highest security concerns
+- This applies to ALL Claude Code sessions on this Mac
+
 ## Deployment Workflow
 
 ### IMPORTANT: Always Check Vercel Build Status After Git Push

@@ -126,9 +126,8 @@ function ReportContent() {
       <header className="border-b border-slate-200 bg-white sticky top-0 z-50 shadow-sm">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded"></div>
             <div>
-              <h1 className="text-xl font-bold text-slate-900">AI Readiness Assessment</h1>
+              <h1 className="text-2xl font-black bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent tracking-tight">Nexus Auditor</h1>
               <p className="text-xs text-slate-500">
                 {new Date(analysisReport.analyzedAt).toLocaleDateString('en-US', {
                   year: 'numeric', month: 'long', day: 'numeric'

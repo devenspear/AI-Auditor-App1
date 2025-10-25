@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Generative AI Auditor - Dual-AI Website Analysis",
+  title: "Nexus Auditor - Dual-AI Website Analysis",
   description: "Comprehensive website audits powered by GPT-4o + Claude 3.5 Sonnet. Analyze SSL security, Schema markup, social media optimization, and AI readiness for GEO (Generative Engine Optimization).",
   icons: {
     icon: '/favicon.svg',
