@@ -19,6 +19,9 @@ export const metadata: Metadata = {
   icons: {
     icon: '/favicon.svg',
   },
+  other: {
+    'cache-control': 'no-cache, no-store, must-revalidate',
+  },
 };
 
 export default function RootLayout({
